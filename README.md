@@ -35,3 +35,6 @@ Some places to start:
   netboot.
 - `/k8s/deploy`: This is where the FluxCD declarative for my homelab Kubernetes
   cluster, which is where almost everything I run ends up going.
+
+For some more deep dives into how things work, check out [my
+blog](https://eevans.co/blog/).
