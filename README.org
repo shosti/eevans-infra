@@ -1,2 +1,0 @@
-* eevans infrastructure
-This is a repo for all the management of eevans.co and eevans.me.
