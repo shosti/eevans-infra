@@ -1,0 +1,153 @@
+---
+# tasks file for pihole
+- name: Ensure opt volume is mounted
+  command: mountpoint /opt
+  changed_when: False
+  when: rpi_data_volume_tang_server is defined
+
+- name: Install unbound
+  apt:
+    name: unbound
+    state: present
+
+- name: Install dnsutils
+  apt:
+    name: dnsutils
+    state: present
+
+- name: Make pihole configuration directory
+  file:
+    path: /opt/pihole/{{ item }}
+    state: directory
+  loop:
+    - pihole
+    - dnsmasq.d
+    - letsencrypt
+    - lighttpd
+
+- include_tasks: letsencrypt.yml
+  when: pihole_enable_letsencrypt
+
+- name: Create unbound configuration file
+  template:
+    src: unbound.conf.j2
+    dest: /etc/unbound/unbound.conf.d/pi-hole.conf
+  notify: restart unbound
+
+- name: Create unbound unit configuration
+  template:
+    src: unbound.service.j2
+    dest: /etc/systemd/system/unbound.service
+  notify: restart unbound
+
+- name: Enable unbound
+  systemd:
+    name: unbound
+    state: started
+    enabled: true
+
+- name: Disable systemd-resolved
+  systemd:
+    name: systemd-resolved
+    state: stopped
+    enabled: false
+
+- name: Disable unbound-resolvconf
+  systemd:
+    name: unbound-resolvconf
+    state: stopped
+    enabled: false
+
+- name: Flush handlers to update unbound port
+  meta: flush_handlers
+
+- name: Make static resolv.conf file
+  template:
+    src: resolv.conf.j2
+    dest: /etc/resolv.conf
+
+- name: Add pihole configuration
+  template:
+    src: pihole-FTL.conf
+    dest: /opt/pihole/pihole/pihole-FTL.conf
+  notify: restart dns
+
+- name: Add custom domains
+  template:
+    src: custom.list.j2
+    dest: /opt/pihole/pihole/custom.list
+  notify: restart dns
+
+- name: Add custom CNAMEs
+  template:
+    src: 05-pihole-custom-cname.conf.j2
+    dest: /opt/pihole/dnsmasq.d/05-pihole-custom-cname.conf
+  notify: restart dns
+
+- name: Create lighttpd configuration
+  template:
+    src: external.conf.j2
+    dest: /opt/pihole/lighttpd/external.conf
+  notify: restart lighttpd
+
+- name: Create pihole env file
+  template:
+    src: pihole-env.j2
+    dest: /opt/pihole/env
+    mode: '0600'
+  notify: restart pihole
+
+- name: Create pihole service
+  template:
+    src: pihole.service.j2
+    dest: /etc/systemd/system/pihole.service
+  notify: restart pihole
+
+- name: Enable pihole
+  systemd:
+    name: pihole
+    state: started
+    enabled: true
+
+- name: Allow firewall TCP access
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    port: '{{ item }}'
+  loop:
+    - 53
+    - 80
+    - 443
+
+- name: Blacklist domains
+  command: "docker exec pihole pihole blacklist {{ item }}"
+  loop: "{{ pihole_blacklist_domains }}"
+  register: output
+  changed_when: "'Adding' in output.stdout"
+
+- name: Blacklist regexes
+  command: "docker exec pihole pihole regex {{ item }}"
+  loop: "{{ pihole_blacklist_regexes }}"
+  register: output
+  changed_when: "'Adding' in output.stdout"
+
+- name: Whitelist domains
+  command: "docker exec pihole pihole whitelist {{ item }}"
+  loop: "{{ pihole_whitelist_domains }}"
+  register: output
+  changed_when: "'Adding' in output.stdout"
+
+- name: Allow firewall DNS UDP access
+  community.general.ufw:
+    rule: allow
+    proto: udp
+    port: 53
+
+- name: Allow internal DNS access to unbound
+  community.general.ufw:
+    rule: allow
+    proto: udp
+    port: 5335
+    from_ip: 172.17.0.0/24
+
+- include_tasks: keepalived.yml

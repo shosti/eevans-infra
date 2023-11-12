@@ -1,0 +1,72 @@
+# Reference: https://devops.college/prometheus-operator-how-to-monitor-an-external-service-3cb6ac8d5acb
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: netsvc
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/component: netsvc
+subsets:
+  - addresses:
+      - hostname: netsvc0
+        ip: 10.51.60.50
+      - hostname: netsvc1
+        ip: 10.51.60.51
+      - hostname: netsvc2
+        ip: 10.51.60.52
+    ports:
+      - name: metrics
+        port: 9100
+        protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: netsvc
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/component: netsvc
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: metrics
+      port: 9100
+      protocol: TCP
+      targetPort: 9100
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: netsvc
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: netsvc
+  namespaceSelector:
+    matchNames:
+      - monitoring
+  endpoints:
+  - port: metrics
+    interval: 10s
+    honorLabels: true
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: netsvc
+  namespace: monitoring
+spec:
+  groups:
+  - name: netsvc.rules
+    rules:
+    - alert: NetsvcTargetDown
+      annotations:
+        description: "One or more netsvc instances is down. If another target goes down, DNS may fail and a bad time will ensue."
+        summary: A netsvc instance is down
+      expr: up{job="netsvc"} == 0
+      for: 10m
+      labels:
+        severity: critical

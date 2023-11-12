@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#
+# Quick helper script for generating random passwords.
+
+set -euo pipefail
+
+tr -dc 'a-zA-Z0-9' </dev/urandom | head -c 20 || true

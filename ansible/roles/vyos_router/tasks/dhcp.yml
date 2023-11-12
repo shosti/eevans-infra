@@ -1,0 +1,102 @@
+- name: Configure DHCP
+  vyos.vyos.vyos_config:
+    lines:
+      - >-
+        set service dhcp-server
+        shared-network-name {{ item.name }}
+        subnet {{ item.ipv4_addr | ansible.netcommon.ipv4('network/prefix') }}
+        range 0
+        start {{ item.dhcp.start }}
+      - >-
+        set service dhcp-server
+        shared-network-name {{ item.name }}
+        subnet {{ item.ipv4_addr | ansible.netcommon.ipv4('network/prefix') }}
+        range 0 stop {{ item.dhcp.stop }}
+      - >-
+        set service dhcp-server
+        shared-network-name {{ item.name }}
+        subnet {{ item.ipv4_addr | ansible.netcommon.ipv4('network/prefix') }}
+        default-router {{ item.ipv4_addr | ansible.netcommon.ipv4('address') }}
+  when: item.dhcp is defined
+  loop: "{{ vyos_router_interfaces }}"
+
+- name: Configure default DNS
+  vyos.vyos.vyos_config:
+    lines:
+      - >-
+        set service dhcp-server
+        shared-network-name {{ item.0.name }}
+        subnet {{ item.0.ipv4_addr | ansible.netcommon.ipv4('network/prefix') }}
+        name-server {{ item.1 }}
+  when: (item.0.dhcp is defined) and (item.0.dhcp.dns is not defined)
+  loop: "{{ vyos_router_interfaces | product(vyos_router_default_dns_servers) | list }}"
+
+- name: Configure custom DNS
+  vyos.vyos.vyos_config:
+    lines:
+      - >-
+        set service dhcp-server
+        shared-network-name {{ item.0.name }}
+        subnet {{ item.0.ipv4_addr | ansible.netcommon.ipv4('network/prefix') }}
+        dns-server {{ item.1 }}
+  when: (item.0.dhcp is defined) and (item.0.dhcp.dns is defined)
+  loop: "{{ vyos_router_interfaces | subelements('dhcp.dns', {'skip_missing': True}) }}"
+
+- name: Configure DNS search domain
+  vyos.vyos.vyos_config:
+    lines:
+      - >-
+        set service dhcp-server
+        shared-network-name {{ item.name }}
+        subnet {{ item.ipv4_addr | ansible.netcommon.ipv4('network/prefix') }}
+        domain-search {{ default_domain }}
+  when: (item.dhcp is defined) and (default_domain is defined)
+  loop: "{{ vyos_router_interfaces }}"
+
+- name: Configure NTP servers
+  vyos.vyos.vyos_config:
+    lines:
+      - >-
+        set service dhcp-server
+        shared-network-name {{ item.0.name }}
+        subnet {{ item.0.ipv4_addr | ansible.netcommon.ipv4('network/prefix') }}
+        ntp-server {{ item.1 }}
+  when: (item.0.dhcp is defined)
+  loop: "{{ vyos_router_interfaces | product(vyos_router_ntp_servers) | list }}"
+
+- name: Configure DHCP static mappings
+  vyos.vyos.vyos_config:
+    lines:
+      - >-
+        set service dhcp-server
+        shared-network-name {{ item.vyos_network }}
+        subnet {{ item.ipv4_addr | ansible.netcommon.ipv4('network/prefix') }}
+        static-mapping {{ item.name }} mac-address {{ item.mac_addr }}
+      - >-
+        set service dhcp-server
+        shared-network-name {{ item.vyos_network }}
+        subnet {{ item.ipv4_addr | ansible.netcommon.ipv4('network/prefix') }}
+        static-mapping {{ item.name }} ip-address {{ item.ipv4_addr | ansible.netcommon.ipv4('address') }}
+  when: static_hosts is defined
+  loop: "{{ static_hosts }}"
+
+- name: Configure DHCP PXE boot settings
+  vyos.vyos.vyos_config:
+    lines:
+      - >-
+        set service dhcp-server
+        shared-network-name {{ item.name }}
+        subnet {{ item.ipv4_addr | ansible.netcommon.ipv4('network/prefix') }}
+        bootfile-server {{ vyos_router_tftp_server }}
+      - >-
+        set service dhcp-server
+        shared-network-name {{ item.name }}
+        subnet {{ item.ipv4_addr | ansible.netcommon.ipv4('network/prefix') }}
+        tftp-server-name {{ vyos_router_tftp_server }}
+      - >-
+        set service dhcp-server
+        shared-network-name {{ item.name }}
+        subnet {{ item.ipv4_addr | ansible.netcommon.ipv4('network/prefix') }}
+        bootfile-name {{ vyos_router_tftp_bios_filename }}
+  when: (item.dhcp is defined and item.dhcp.tftpboot is defined and item.dhcp.tftpboot)
+  loop: "{{ vyos_router_interfaces }}"

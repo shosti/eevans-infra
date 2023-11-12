@@ -1,0 +1,27 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- apcupsmon.yaml
+- awx.yaml
+- blogmailer.yaml
+- crdb.yaml
+- dnsupdate.yaml
+- eevansco.yaml
+- eevansco-static.yaml
+- ghost.yaml
+- gitea.yaml
+- gitea-act-runner.yaml
+- golinks.yaml
+- harbor.yaml
+- home-assistant.yaml
+- jellyfin.yaml
+- keycloak.yaml
+- listmonk.yaml
+- mariadb.yaml
+- mosquitto.yaml
+- paperless.yaml
+- terraform-state-backup.yaml
+- trivy-operator.yaml
+- truenas-minio.yaml
+- unifi.yaml
+- wraft.yaml

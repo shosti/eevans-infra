@@ -1,0 +1,30 @@
+- name: Install b2 CLI
+  apt:
+    name: backblaze-b2
+
+- name: Copy backup script
+  template:
+    src: tang-backup.j2
+    dest: /usr/local/bin/tang-backup
+    mode: '0755'
+
+- name: Copy GPG public key
+  copy:
+    src: tang_server_gpg.asc
+    dest: /usr/local/etc/tang-gpg.asc
+
+- name: Import GPG key
+  command: gpg --import /usr/local/etc/tang-gpg.asc
+  changed_when: false
+
+- name: Write B2 environment file
+  template:
+    src: tang-b2-environment.j2
+    dest: /opt/tang-b2-environment
+    mode: '0600'
+
+- name: Make weekly backup cron job
+  cron:
+    name: Backup tang directory
+    special_time: weekly
+    job: /usr/local/bin/tang-backup

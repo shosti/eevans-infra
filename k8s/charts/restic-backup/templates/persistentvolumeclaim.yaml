@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    {{- include "restic-backup.labels" . | nindent 4 }}
+  name: {{ .Release.Name }}-cache
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.cache.size }}
+  storageClassName: {{ .Values.cache.storageClass }}

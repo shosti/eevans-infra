@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app.kubernetes.io/name: node-inotify
+  name: node-inotify
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: node-inotify
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: node-inotify
+    spec:
+      containers:
+      - image: busybox:1.36
+        name: node-inotify
+        securityContext:
+          privileged: true
+        command:
+         - sh
+         - -c
+         - |
+             set -xeu
+             sysctl -w fs.inotify.max_user_instances=8192
+             trap : TERM INT
+             sleep 9999999999d & wait

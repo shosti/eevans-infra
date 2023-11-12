@@ -1,0 +1,42 @@
+---
+kind: Probe
+apiVersion: monitoring.coreos.com/v1
+metadata:
+  name: eevansco
+  namespace: eevansco
+spec:
+  interval: 10s
+  module: http_2xx
+  prober:
+    url: prometheus-blackbox-exporter.monitoring.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      static:
+      - https://eevans.co
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: eevansco
+  namespace: eevansco
+spec:
+  groups:
+  - name: eevansco.eevansco
+    rules:
+    - alert: BlogDown
+      annotations:
+        summary: Blog is unavailable
+      expr: probe_success{job="probe/eevansco/eevansco",namespace="eevansco"} != 1
+      for: 30s
+      labels:
+        severity: critical
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-egress
+  namespace: eevansco
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress

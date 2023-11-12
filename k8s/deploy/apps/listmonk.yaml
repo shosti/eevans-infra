@@ -1,0 +1,423 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: listmonk-db
+  namespace: listmonk
+  labels:
+    app.kubernetes.io/name: listmonk
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: postgresql
+      version: 13.2.1
+      sourceRef:
+        kind: HelmRepository
+        name: bitnami
+        namespace: flux-system
+      interval: 1m
+  values:
+    auth:
+      username: listmonk
+      database: listmonk
+      existingSecret: listmonk-db
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: listmonk
+  namespace: listmonk
+data:
+  config.toml: |
+    [app]
+    address = "0.0.0.0:9000"
+    admin_username = "listmonk"
+
+    # Database.
+    [db]
+    host = "listmonk-db-postgresql-0.listmonk-db-postgresql-hl"
+    port = 5432
+    user = "listmonk"
+
+    # Ensure that this database has been created in Postgres.
+    database = "listmonk"
+
+    ssl_mode = "disable"
+    max_open = 25
+    max_idle = 25
+    max_lifetime = "300s"
+
+    # Optional space separated Postgres DSN params. eg: "application_name=listmonk gssencmode=disable"
+    params = ""
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: listmonk
+  name: listmonk
+  namespace: listmonk
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: listmonk
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: listmonk
+        eevans.me/public: "true"
+    spec:
+      initContainers:
+        - image: listmonk/listmonk:v2.5.1
+          name: install
+          command:
+            - /bin/sh
+            - -c
+            - |
+                ./listmonk --install --config /listmonk/config.toml --idempotent --yes
+          envFrom:
+            - secretRef:
+                name: listmonk-secrets
+          volumeMounts:
+            - name: config
+              mountPath: /listmonk/config.toml
+              subPath: config.toml
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1900
+            capabilities:
+              drop:
+                - ALL
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            limits:
+              cpu: 500m
+              memory: 256Mi
+      containers:
+        - image: listmonk/listmonk:v2.5.1
+          name: listmonk
+          envFrom:
+            - secretRef:
+                name: listmonk-secrets
+          ports:
+            - name: http
+              containerPort: 9000
+          volumeMounts:
+            - name: config
+              mountPath: /listmonk/config.toml
+              subPath: config.toml
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+              scheme: HTTP
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+              scheme: HTTP
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1900
+            capabilities:
+              drop:
+                - ALL
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            limits:
+              cpu: 500m
+              memory: 256Mi
+      volumes:
+        - name: config
+          configMap:
+            name: listmonk
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: listmonk
+  name: listmonk
+  namespace: listmonk
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 9000
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/name: listmonk
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: listmonk-admin
+  namespace: listmonk
+  labels:
+    app.kubernetes.io/name: listmonk
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: cilium
+  tls:
+   - hosts:
+     - listmonk.eevans.me
+     secretName: listmonk-admin-tls
+  rules:
+  - host: listmonk.eevans.me
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: listmonk
+            port:
+              name: http
+---
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: listmonk-uploads
+  namespace: listmonk
+spec:
+  bucketName: listmonk-uploads
+  storageClassName: rook-ceph-s3-public
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: prep-listmonk-uploads-bucket
+  namespace: listmonk
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: aws
+          image: public.ecr.aws/aws-cli/aws-cli:2.13.29
+          command:
+            - bash
+            - -c
+            - |
+              set -xeuo pipefail
+
+              export AWS_ENDPOINT_URL="http://$BUCKET_HOST"
+              export AWS_REGION=us-east-1
+              aws s3api put-bucket-website --bucket "$BUCKET_NAME" --website-configuration file:///config/website.json
+          envFrom:
+            - secretRef:
+                name: listmonk-uploads
+            - configMapRef:
+                name: listmonk-uploads
+          volumeMounts:
+            - name: config
+              mountPath: /config
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1234
+            runAsGroup: 1234
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+      volumes:
+        - name: config
+          configMap:
+            name: s3-website-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: s3-website-config
+  namespace: listmonk
+data:
+  website.json: |
+    {
+      "IndexDocument": {
+        "Suffix": "index.html"
+      }
+    }
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: listmonk-uploads
+  namespace: rook-ceph
+spec:
+  parentRefs:
+  - name: ingress-public
+    namespace: ingress-public
+  hostnames:
+    - list-uploads.eevans.co
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    filters:
+      - type: URLRewrite
+        urlRewrite:
+          hostname: listmonk-uploads.s3.eevans.co
+    backendRefs:
+    - name: rook-ceph-rgw-s3-public
+      port: 80
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: postgres-config-listmonk
+  namespace: listmonk
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: ./k8s/charts/postgres-config
+      sourceRef:
+        kind: GitRepository
+        name: eevans-infra
+        namespace: flux-system
+      interval: 1m
+  values:
+    postgresService: listmonk-db-postgresql-hl
+
+    backups:
+      enabled: true
+      image:
+        tag: v7-pg16
+      repositoryName: b2:eevans-lan-db-backups:listmonk
+      postgresql:
+        host: listmonk-db-postgresql-0
+        database: listmonk
+        user: listmonk
+      postgresCredentials:
+        name: listmonk-db
+        key: password
+      healthCheckURL: https://hc-ping.com/d1416842-55fc-4341-921c-07f71b731b3a
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: listmonk-public
+  namespace: listmonk
+spec:
+  parentRefs:
+  - name: ingress-public
+    namespace: ingress-public
+  hostnames:
+    - eevans.co
+  # See https://listmonk.app/docs/configuration/#public-endpoints-to-expose-to-the-internet
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /subscription
+    - path:
+        type: PathPrefix
+        value: /link
+    - path:
+        type: PathPrefix
+        value: /campaign
+    - path:
+        type: PathPrefix
+        value: /public
+    - path:
+        type: PathPrefix
+        value: /webhooks/service
+    backendRefs:
+    - name: listmonk
+      port: 9000
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: listmonk
+  namespace: listmonk
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: listmonk
+  ingress:
+    - fromEntities:
+        - cluster
+      toPorts:
+        - ports:
+            - port: "9000"
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+          rules:
+            dns:
+              - matchPattern: "*"
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: rook-ceph
+            app.kubernetes.io/instance: s3-public
+      toPorts:
+        - ports:
+            - port: "8080"
+            - port: "80"
+    - toEndpoints:
+        - {}
+    - toFQDNs:
+        - matchName: email-smtp.us-west-2.amazonaws.com
+      toPorts:
+        - ports:
+            - port: "465"
+    - toFQDNs:
+        - matchName: hcaptcha.com
+        - matchName: sns.us-west-2.amazonaws.com
+      toPorts:
+        - ports:
+            - port: "443"
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres
+  namespace: listmonk
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: listmonk-db
+  policyTypes:
+    - Egress
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: listmonk
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: postgres-config-listmonk
+      ports:
+        - port: 5432
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 9187
+  egress: []

@@ -1,0 +1,155 @@
+* K8s stuff
+This is where all the k8s stuff goes. It is mostly managed through helm.
+
+** Bootstrapping
+*** Auth
+You will need a working kubectl connection before any of this will work. So,
+first set up a cluster (see the ansible directory), and then copy over
+/etc/kubernetes/admin.conf on one of the control-plane nodes to your local
+setup. (User setup happens later.)
+*** Cilium/FluxCD/etc
+TODO: This is basically unsolved for now. Not really sure how to deal with
+cilium in particular.
+** Cluster Management
+*** Rook nodes
+Devices added to the ceph cluster have to be totally zapped with something like ~sgdisk --zap-all $DISK~
+
+*** Adding worker nodes
+This is all managed through Terraform and should be basically automatic.
+*** Adding a control node
+To add a control node /other than controller 0/ (for instance, if one gets
+accidentally nuked), you'll have to:
+
+- run bin/prep-controller-add
+- Run terraform (everything else should be automatic)
+
+TODO: There's currently no solution for managing controller-0 replacement.
+*** Upgrading
+See ../terraform/bin/k8s*upgrade
+** TrueNAS Storage VM
+PCI passthrough is basically configured through Flux, so should be
+self-explanatory.
+
+The boot disk was uploaded with something like:
+
+kubectl virt image-upload dv storage-boot --size=25Gi --image-path=storage.img  --uploadproxy-url=https://localhost:8443 --insecure
+
+** Minio
+New minio deployments are slightly involved:
+
+1. Create a new NFS share on storage with minio:minio as the owner (473:473)
+2. Make a new deployment of the nfs-pv chart pointing to the NFS share
+3. Make a new minio deployment that uses that PVC as `existingClaim`
+** CI/CD
+The public key for the FluxCD deploy key is:
+
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDG9vEyodv+/KnhbHPQCjl+oyjwDlorToeR9OkR0A6RoTt6Kf86DHwAphg+OvD6xPiArf7/Gzq0U4qoB5s1mJct8VQUsXXp4nNOBFNLBE/UAXbIWxfVnTay9RCUazpvedngLcIcy69x2YHQJxQkY65F1eS/ZhlCYUrUQJNfW+5QgSy9mXYc5jH2iI1Cs80xKuaaybAJgBW0pRsd/E4pWJ2hnVJE8Wf3bq0IWq6RnG+55LzlPBR2Ue4klJoS0wR9pYLV/FLP5DXJusreD0JJ2qy7G6TVPxuTrlvLYND1yKGx2xicTZq1IAjqoh/LWt9Iz5IDJfQHPq43L3esWWaGz3rT
+** K8s Upgrades
+K8s upgrades are a bit involved because of the bare-metalness. There are a few steps.
+
+*** Step 0: Get it ready in terraform
+Change the variables in terraform/modules/flatcar_k8s_node/variables.tf so that
+the kube* binaries have the correct versions/SHAs. Then do a quick apply (which
+shouldn't actually change anything on the cluster).
+
+*** Step 1: Upgrade Control Plane
+Use the terraform/bin/k8s-control-plane-upgrade script, which is pretty
+straightforward. This updates the control plane but not kubelet.
+
+*** Step 2: Reprovision nodes
+For each node there's a little dance:
+
+- Make sure the node you're prepping is *not* first in the list of nodes in
+  terraform/cluster.tf (since the secrets/config will be copied from the first
+  node to the others). This may involve some reshuffling and a terraform apply.
+
+- Run terraform/bin/k8s-deprovision to reset the node state entirely.
+
+- *TEMPORARY*: Find the kubelet CSR with ~k get csr~ and approve it with ~k
+  certificate approve <csr-name>~ (this is just until [[https://github.com/kontena/kubelet-rubber-stamp/issues/40][this issue]] is resolved)
+
+- Run k8s/bin/prep-nodes to uncordon the control-plane nodes
+
+If all goes well, that oughta be it!
+** Ceph Custom Settings Applies
+There's some manual configuration I've done:
+
+*** Get rid of TOO_MANY_PGS
+See https://docs.ceph.com/en/latest/rados/operations/health-checks/#too-many-pgs
+
+#+begin_src
+ceph config set global mon_max_pg_per_osd 500
+#+end_src
+
+** Public S3 Configuration
+Ceph public S3 gateways are *extremely* finnicky and poorly documented. See [[https://access.redhat.com/documentation/en-us/red_hat_ceph_storage/2/html/object_gateway_guide_for_red_hat_enterprise_linux/configuration#configuring_gateways_for_static_web_hosting][the
+docs]] for what there is, but what I've been able to assertain:
+
+- ~rgw_enable_static_website~ has to be set to use the ~s3 website~ command (fair enough)
+- The index document will /only/ work if you access the bucket by hostname, not
+  by path
+- Both ~rgw_dns_s3website_name~ /and/ ~rgw_dns_name~ /have/ to be set
+- If there's any hostname in the request that's /not/ ~rgw_dns_name~, it will
+  try to match a bucket. So essentially you /have/ to use ~rgw_dns_name~ for all
+  write operations (and the rook operator needs to use it). Also, that means
+  forget about using a public ingress for write operations (so everything has to
+  be in-cluster).
+
+With that being said, here's the configuration that seems to work:
+
+#+begin_src
+ceph config set client.rgw.s3.public.a rgw_enable_static_website true
+ceph config set client.rgw.s3.public.a rgw_dns_s3website_name s3.eevans.co
+ceph config set client.rgw.s3.public.a rgw_dns_name rook-ceph-rgw-s3-public.rook-ceph.svc
+#+end_src
+
+Then restart rgw pods:
+
+#+begin_src
+k rollout restart deployment rook-ceph-rgw-s3-public-a
+#+end_src
+
+** Ceph OSD removal
+*** Notes
+- Rook instructions are at
+  https://rook.io/docs/rook/v1.12/Storage-Configuration/Advanced/ceph-osd-mgmt/#pvc-based-cluster,
+  although they don't seem quite complete (and are a bit hard to interpret)
+- Ceph instructions are at https://docs.ceph.com/en/latest/rados/operations/add-or-rm-osds/
+- I'm not quite clear on what ~removeOSDsIfOutAndSafeToRemove~ is supposed to
+  do, but it doesn't seem to do anything?
+- Rook will aggressively recreate OSDs after they've been removed based on
+  scanning the physical disks, so you *have* to manually purge the disks at the
+  host level before scaling up the operator
+*** Instructions
+1. Find OSD number from Ceph dashboard/sleuthing (e.g. ~ID=3~) and host-level
+   disk (e.g. /dev/sda)
+2. Before doing anything else, in the Ceph dashboard, reweight the OSD to 0
+   (this will cause data to drain from it).
+3. Wait for all PGs to be green (this will take a long time).
+4. Delete the device config in cluster.yaml and set
+   ~removeOSDsIfOutAndSafeToRemove: true~ (this doesn't seem to actually work
+   but can't hurt)
+5. Check if the OSD is safe to destroy with: kubectl rook-ceph ceph osd safe-to-destroy osd.$ID
+6. kubectl scale deployment rook-ceph-osd-$ID --replicas=0
+7. kubectl rook-ceph ceph osd down osd.$ID
+8. kubectl rook-ceph rook purge-osd $ID
+9. kubectl scale deployment rook-ceph-operator --replicas=0
+10. kubectl delete deployment rook-ceph-osd-$ID (somehow this doesn't seem to
+    happen automatically)
+11. SSH to the host and find the disk you just removed, e.g. ~DISK=/dev/sda~
+12. Run ~lsblk~ and find the crypt name (will be auto-generated like
+    ~nbnZhx-vHpr-U5y1-m3pX-dUZb-SzHr-CyIRzx~)
+13. sudo cryptsetup close $CRYPTNAME
+14. Find the lvm name (will be autogenerated like
+    ~ceph--2510ab35--3bbd--4d2d--8ea6--e130355e6f3f-osd--block--bd466493--bc90--4e20--9f13--96e3ce5bac41~)
+15. sudo cryptsetup close $LVMNAME
+16. sudo sgdisk --zap-all $DISK
+17. sudo blkdiscard $DISK
+18. sudo partprobe $DISK
+19. kubectl scale deployment rook-ceph-operator --replicas=1
+20. Once everything has stabilized, set ~removeOSDsIfOutAndSafeToRemove: false~
+** Local drive management
+The local-drive-provisioner and local-static-provisioner controllers handle
+turning local drives into PVs. The local-drive-provisioner secret in
+k8s/secrets/kube-system/local-drives.yaml should be pretty self-explanatory and
+do most of what's needed to add drives and volumes.

@@ -1,0 +1,61 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: terraform-state-backup
+  namespace: rook-ceph
+spec:
+  schedule: 0 3 * * *
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: rclone
+            image: rclone/rclone:1.56.0
+            envFrom:
+              - secretRef:
+                  name: terraform-state-backup
+              - secretRef:
+                  name: terraform-state
+            command:
+              - /bin/sh
+              - -c
+              - |
+                set -eu
+
+                mkdir -p /config/rclone
+                touch /config/rclone/rclone.conf
+                chmod 0600 /config/rclone/rclone.conf
+                cat <<EOS >> /config/rclone/rclone.conf
+                [src]
+                type = s3
+                provider = Ceph
+                env_auth = false
+                access_key_id = $AWS_ACCESS_KEY_ID
+                secret_access_key = $AWS_SECRET_ACCESS_KEY
+                region =
+                endpoint = http://rook-ceph-rgw-object-store
+                location_constraint =
+                acl =
+                server_side_encryption =
+                storage_class =
+
+                [b2_remote]
+                type = b2
+                account = $B2_ACCOUNT_ID
+                key = $B2_ACCOUNT_KEY
+                bucket =
+                folder =
+
+                [dest]
+                type = crypt
+                remote = b2_remote:eevans-lan-s3-backups/terraform-state
+                filename_encryption = standard
+                password = $ENCRYPT_PASSWORD
+                password2 = $ENCRYPT_SALT
+                EOS
+
+                rclone sync --progress src:terraform-state dest:
+                wget -O- https://hc-ping.com/afc3ea19-8f92-43ed-b1e8-052d7a9368c3
+
+          restartPolicy: OnFailure

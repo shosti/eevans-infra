@@ -1,0 +1,11 @@
+# {{ ansible_managed }}
+[Unit]
+{% if rpi_data_volume_tang_server is defined %}
+Wants=unlock-data-volume.service
+After=unlock-data-volume.service
+{% endif %}
+DefaultDependencies=no
+
+[Mount]
+What=/dev/mapper/cryptdata
+Where=/opt

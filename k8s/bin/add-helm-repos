@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+#
+# Script to set up local helm repos for testing purposes.
+
+set -euo pipefail
+
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo add cilium https://helm.cilium.io/
+helm repo add codecentric https://codecentric.github.io/helm-charts
+helm repo add gitea https://dl.gitea.io/charts/
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo add influxdata https://helm.influxdata.com/
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo add jetstack https://charts.jetstack.io
+helm repo add minio https://helm.min.io/
+helm repo add prometheus-com https://prometheus-community.github.io/helm-charts
+helm repo add stable https://charts.helm.sh/stable
+
+helm repo update

@@ -1,0 +1,17 @@
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: update-operator
+  namespace: reboot-coordinator
+spec:
+  dependsOn:
+    - name: config
+      namespace: flux-system
+  interval: 10m0s
+  path: ./k8s/deploy/update-operator
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    namespace: flux-system
+    name: eevans-infra

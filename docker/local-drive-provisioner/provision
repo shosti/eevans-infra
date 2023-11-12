@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+#
+# Prep drives so they can be disovered by the static drive provisioner, see
+# https://github.com/kubernetes-sigs/sig-storage-local-static-provisioner/blob/master/docs/operations.md#link-devices-into-directory-to-be-discovered-as-filesystem-pvs
+# for the desired setup
+
+set -euo pipefail
+
+CONFIG_FILE="${CONFIG_FILE:-/config/config.yaml}"
+DEST_DIRECTORY="${DEST_DIRECTORY:-/mnt/disks}"
+VOLUME_GROUP=LocalDisks
+
+run() {
+    echo "processing disks..."
+    for disk in $(yq ".${NODE}.disks[].path" "$CONFIG_FILE"); do
+        echo "processing $disk"
+        process_disk "$disk"
+    done
+
+    for volume in $(yq ".${NODE}.volumes[].id" "$CONFIG_FILE"); do
+        echo "processing volume $volume"
+        process_volume "$volume"
+    done
+}
+
+process_disk() {
+    local disk="$1"
+    local id
+    id="$(get_disk_id "$disk")"
+
+    echo "checking if $disk needs to be set up for encryption..."
+    if ! cryptsetup isLuks "$disk"; then
+        setup_luks "$disk"
+    fi
+
+    if ! [ -b "/dev/mapper/$id" ] ; then
+        unlock_disk "$disk" "$id"
+    fi
+
+    if ! vgs | grep -q "$VOLUME_GROUP"; then
+        create_volume_group "$id"
+    fi
+
+    if ! disk_is_in_pv "$id"; then
+        add_disk_to_pv "$id"
+    fi
+}
+
+process_volume() {
+    local id="$1"
+
+    if ! [ -b "/dev/$VOLUME_GROUP/$id" ]; then
+        create_volume "$id"
+    fi
+
+    if ! [ -L "$DEST_DIRECTORY/$id" ]; then
+        link_volume "$id"
+    fi
+}
+
+setup_luks() {
+    local disk="$1"
+    local secret
+    secret="$(get_secret "$disk")"
+
+    echo "setting up $disk for encryption"
+    if ! [ "$secret" ] || [ "$secret" = "null" ]; then
+        echo "Encryption secret not defined for $disk"
+        exit 1
+    fi
+
+    echo -n "$secret" | cryptsetup luksFormat "$disk" -d -
+    echo "$disk has been encrypted"
+}
+
+unlock_disk() {
+    local disk="$1"
+    local id="$2"
+    local secret
+    secret="$(get_secret "$disk")"
+
+    echo "unlocking $disk with id $id"
+    echo -n "$secret" | cryptsetup open "$disk" "$id" -d -
+}
+
+create_volume_group() {
+    local id="$1"
+
+    echo "creating volume group $VOLUME_GROUP with initial disk with id $1"
+    vgcreate "$VOLUME_GROUP" "/dev/mapper/$id"
+}
+
+disk_is_in_pv() {
+    local id="$1"
+
+    pvdisplay -C -o pv_name,vg_name | grep "$id"  | grep -q "$VOLUME_GROUP"
+}
+
+add_disk_to_pv() {
+    local id="$1"
+
+    echo "adding disk with ID $id to $VOLUME_GROUP"
+    vgextend "$VOLUME_GROUP" "/dev/mapper/$id"
+}
+
+create_volume() {
+    local id="$1"
+    local size
+    size="$(get_volume_size "$1")"
+
+    if ! [ "$size" ] || [ "$size" = "null" ]; then
+        echo "Volume size not set for $id"
+        exit 1
+    fi
+
+    echo "creating logical volume $id with size $size"
+    lvcreate --size "$size" --zero n --name "$id" "$VOLUME_GROUP"
+}
+
+link_volume() {
+    local id="$1"
+
+    echo "linking volume $id to $DEST_DIRECTORY"
+    ln -s "/dev/$VOLUME_GROUP/$id" "$DEST_DIRECTORY/$id"
+}
+
+get_secret() {
+    local disk="$1"
+    yq ".${NODE}.disks[] | select(.path == \"$disk\").secret" "$CONFIG_FILE"
+}
+
+get_disk_id() {
+    local disk="$1"
+    yq ".${NODE}.disks[] | select(.path == \"$disk\").id" "$CONFIG_FILE"
+}
+
+get_volume_size() {
+    local id="$1"
+    yq ".${NODE}.volumes[] | select(.id == \"$id\").size" "$CONFIG_FILE"
+}
+
+while true; do
+    run
+    sleep 60
+done

@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+
+usage() {
+    echo "Usage: $0 <boot-dev> <hostname>"
+    exit 1
+}
+[ "$#" -eq 2 ] || usage
+
+DEV="$1"
+HOSTNAME="$2"
+
+TMPDIR="$(mktemp -d)"
+sudo mount "$DEV" "$TMPDIR"
+cleanup() {
+    sudo umount "$TMPDIR"
+    rm -rf "$TMPDIR"
+}
+trap cleanup EXIT
+
+for f in config.txt user-data cmdline.txt; do
+    sudo cp "$DIR/$f" "$TMPDIR/$f"
+done
+
+echo "hostname: $HOSTNAME" | sudo tee -a "$TMPDIR/user-data"

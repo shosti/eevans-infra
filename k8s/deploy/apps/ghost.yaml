@@ -1,0 +1,493 @@
+---
+apiVersion: mariadb.mmontes.io/v1alpha1
+kind: Database
+metadata:
+  name: ghost
+  namespace: ghost
+spec:
+  mariaDbRef:
+    name: mariadb
+    namespace: mariadb
+  characterSet: utf8
+  collate: utf8_general_ci
+  retryInterval: 5s
+---
+apiVersion: mariadb.mmontes.io/v1alpha1
+kind: User
+metadata:
+  name: ghost
+  namespace: ghost
+spec:
+  mariaDbRef:
+    name: mariadb
+    namespace: mariadb
+  passwordSecretKeyRef:
+    name: ghost-db
+    key: mysql-password
+  maxUserConnections: 20
+  retryInterval: 5s
+---
+apiVersion: mariadb.mmontes.io/v1alpha1
+kind: Grant
+metadata:
+  name: ghost
+  namespace: ghost
+spec:
+  mariaDbRef:
+    name: mariadb
+    namespace: mariadb
+  privileges:
+    - "ALL"
+  database: "ghost"
+  table: "*"
+  username: ghost
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ghost
+  namespace: ghost
+  labels:
+    app.kubernetes.io/name: ghost
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ghost
+  namespace: ghost
+  labels:
+    app.kubernetes.io/name: ghost
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: ghost
+  ports:
+    - name: http
+      port: 2368
+      targetPort: 2368
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: ghost-public
+  namespace: ghost
+  labels:
+    app.kubernetes.io/name: ghost
+spec:
+  parentRefs:
+  - name: ingress-public
+    namespace: ingress-public
+  hostnames:
+    - blog.allegramolto.com
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    filters:
+      - type: RequestHeaderModifier
+        requestHeaderModifier:
+          set:
+            - name: x-forwarded-proto
+              value: https
+    backendRefs:
+    - name: ghost
+      port: 2368
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ghost-admin
+  namespace: ghost
+  labels:
+    app.kubernetes.io/name: ghost
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx
+  tls:
+   - hosts:
+     - ghost.eevans.me
+     secretName: ghost-admin-tls
+  rules:
+  - host: ghost.eevans.me
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ghost
+            port:
+              name: http
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ghost-content
+  namespace: ghost
+  labels:
+    app.kubernetes.io/name: ghost
+spec:
+  storageClassName: rook-cephfs
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  volumeMode: Filesystem
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ghost
+  namespace: ghost
+  labels:
+    app.kubernetes.io/name: ghost
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ghost
+  replicas: 1
+  strategy:
+    type: Recreate # ghost doesn't work in HA, which is super annoying!
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ghost
+        eevans.me/public: "true"
+    spec:
+      serviceAccountName: ghost
+      containers:
+        - name: ghost
+          image: shosti/ghost:5.69.2
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: url
+              value: https://blog.allegramolto.com
+            - name: database__client
+              value: mysql
+            - name: database__connection__host
+              value: mariadb-primary.mariadb
+            - name: database__connection__user
+              value: ghost
+            - name: database__connection__password
+              valueFrom:
+                secretKeyRef:
+                  name: ghost-db
+                  key: mysql-password
+            - name: database__connection__database
+              value: ghost
+            - name: logging__transports
+              value: '["stdout"]'
+            - name: caching__contentAPI__maxAge
+              value: '30'
+            - name: caching__frontend__maxAge
+              value: '300'
+            - name: admin__url
+              value: https://ghost.eevans.me
+            - name: mail__transport
+              value: SMTP
+            - name: mail__options__host
+              value: email-smtp.us-west-2.amazonaws.com
+            - name: mail__options__service
+              value: SES
+            - name: mail__options__port
+              value: '465'
+            - name: mail__from
+              value: "'Allegra Chapman' <allegra@allegramolto.com>"
+            - name: adapters__storage__active
+              value: s3
+            - name: storage__active
+              value: s3
+            - name: GHOST_STORAGE_ADAPTER_S3_FORCE_PATH_STYLE
+              value: 'true'
+            - name: GHOST_STORAGE_ADAPTER_S3_ENDPOINT
+              value: http://rook-ceph-rgw-s3-public.rook-ceph.svc # annoyingly the CM doesn't include http://
+            - name: GHOST_STORAGE_ADAPTER_S3_PATH_BUCKET
+              valueFrom:
+                configMapKeyRef:
+                  name: ghost-static
+                  key: BUCKET_NAME
+            - name: AWS_DEFAULT_REGION
+              value: 'us-east-1' # Some AWS libraries freak out if this isn't set
+            - name: GHOST_STORAGE_ADAPTER_S3_ASSET_HOST
+              value: https://static.allegramolto.com
+          envFrom:
+            - secretRef:
+                name: ghost-env
+            - secretRef:
+                name: ghost-static
+          resources:
+            limits:
+              cpu: 1
+              memory: 1Gi
+          ports:
+            - name: http
+              containerPort: 2368
+          readinessProbe:
+            httpGet:
+              path: /ghost/api/admin/site/
+              port: http
+              httpHeaders:
+                - name: X-Forwarded-Proto
+                  value: https
+                - name: Host
+                  value: ghost.eevans.me
+          livenessProbe:
+            initialDelaySeconds: 120
+            httpGet:
+              path: /ghost/api/admin/site/
+              port: http
+              httpHeaders:
+                - name: X-Forwarded-Proto
+                  value: https
+                - name: Host
+                  value: ghost.eevans.me
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 2368
+            capabilities:
+              drop:
+                - ALL
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ghost-backup
+  namespace: ghost
+  labels:
+    app.kubernetes.io/name: ghost
+data:
+  rclone.conf: |
+    [truenas]
+    type = s3
+    provider = Minio
+    env_auth = true
+    endpoint = http://minio.truenas-storage:9000
+    force_path_style = true
+    region =
+# ---
+# apiVersion: batch/v1
+# kind: CronJob
+# metadata:
+#   name: ghost-backup
+#   namespace: ghost
+#   labels:
+#     app.kubernetes.io/name: ghost
+# spec:
+#   schedule: 0 5 * * *
+#   jobTemplate:
+#     spec:
+#       template:
+#         spec:
+#           containers:
+#           - name: rclone
+#             image: rclone/rclone:1.64.0
+#             envFrom:
+#               - secretRef:
+#                   name: ghost-backup
+#             volumeMounts:
+#               - name: config
+#                 mountPath: /config/rclone
+#                 readOnly: true
+#             command:
+#               - /bin/sh
+#               - -c
+#               - |
+#                 set -eu
+
+#                 rclone sync --progress /src truenas:ghost-backup
+#                 wget -O- https://hc-ping.com/f761ebca-dee1-46fc-81e6-37a7df5d2c30
+#           volumes:
+#             - name: ghost-content
+#               persistentVolumeClaim:
+#                 claimName: ghost-content
+#             - name: config
+#               configMap:
+#                 name: ghost-backup
+#           restartPolicy: OnFailure
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: ghost
+  namespace: ghost
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: ghost
+  ingress:
+    - fromEntities:
+        - cluster
+      toPorts:
+        - ports:
+            - port: "2368"
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: mariadb
+      toPorts:
+        - ports:
+            - port: "3306"
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+          rules:
+            dns:
+              - matchPattern: "*"
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: rook-ceph
+            app.kubernetes.io/instance: s3-public
+      toPorts:
+        - ports:
+            - port: "8080"
+            - port: "80"
+    - toEndpoints:
+        - {}
+    - toFQDNs:
+        - matchName: email-smtp.us-west-2.amazonaws.com
+      toPorts:
+        - ports:
+            - port: "465"
+    - toFQDNs:
+        - matchName: www.gravatar.com
+        - matchName: static.ghost.org
+        - matchName: blog.allegramolto.com
+      toPorts:
+        - ports:
+            - port: "80"
+            - port: "443"
+---
+kind: Probe
+apiVersion: monitoring.coreos.com/v1
+metadata:
+  name: ghost
+  namespace: ghost
+spec:
+  interval: 10s
+  module: http_2xx
+  prober:
+    url: prometheus-blackbox-exporter.monitoring.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      static:
+      - https://blog.allegramolto.com
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: ghost
+  namespace: ghost
+spec:
+  groups:
+  - name: ghost.ghost
+    rules:
+    - alert: GhostBlogDown
+      annotations:
+        summary: Ghost blog is unavailable
+      expr: probe_success{job="probe/ghost/ghost",namespace="ghost"} != 1
+      for: 30s
+      labels:
+        severity: critical
+---
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: ghost-static
+  namespace: ghost
+spec:
+  bucketName: ghost-static
+  storageClassName: rook-ceph-s3-public
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: ghost-static
+  namespace: rook-ceph
+spec:
+  parentRefs:
+  - name: ingress-public
+    namespace: ingress-public
+  hostnames:
+    - static.allegramolto.com
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    filters:
+      - type: URLRewrite
+        urlRewrite:
+          hostname: ghost-static.s3.eevans.co
+    backendRefs:
+    - name: rook-ceph-rgw-s3-public
+      port: 80
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: prep-ghost-static-bucket
+  namespace: ghost
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: aws
+          image: public.ecr.aws/aws-cli/aws-cli:2.13.29
+          command:
+            - bash
+            - -c
+            - |
+              set -xeuo pipefail
+
+              export AWS_ENDPOINT_URL="http://$BUCKET_HOST"
+              export AWS_REGION=us-east-1
+              aws s3api put-bucket-website --bucket "$BUCKET_NAME" --website-configuration file:///config/website.json
+          envFrom:
+            - secretRef:
+                name: ghost-static
+            - configMapRef:
+                name: ghost-static
+          volumeMounts:
+            - name: config
+              mountPath: /config
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1234
+            runAsGroup: 1234
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+      volumes:
+        - name: config
+          configMap:
+            name: s3-public-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: s3-public-config
+  namespace: ghost
+data:
+  website.json: |
+    {
+      "IndexDocument": {
+        "Suffix": "index.html"
+      }
+    }

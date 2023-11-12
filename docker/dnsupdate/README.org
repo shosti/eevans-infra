@@ -1,0 +1,9 @@
+* dnsupdate
+
+A quick script to do dynamic DNS updates for Cloudflare (since the vyos version
+doesn't seem to work with API tokens 😞).
+
+** Required environment variables
+- API_TOKEN: The Cloudflare API token
+- ZONE_NAME: The Cloudflare zone name (e.g. "example.com")
+- HOST: The DDNS hostname to update (e.g. "mylan.example.com")

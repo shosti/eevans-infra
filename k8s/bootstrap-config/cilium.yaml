@@ -1,0 +1,8 @@
+# This file should ideally stay in sync with the HelmRelease for cilium.
+ipam:
+  operator:
+    clusterPoolIPv4PodCIDR: "10.101.0.0/16"
+l7Proxy: false
+encryption:
+  enabled: true
+  type: wireguard

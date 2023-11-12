@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+TMPDIR="$(mktemp -d)"
+chmod 0700 "$TMPDIR"
+cleanup() {
+    rm -rf "$TMPDIR"
+}
+trap cleanup EXIT
+
+primary_ip="$1"
+shift
+secondary_ips=( "$@" )
+
+do_ssh() {
+    ssh -o StrictHostKeyChecking=no "$@"
+}
+
+wait_for_controller() {
+    ip="$1"
+    i=1
+    while [ "$i" -lt 600 ]; do
+        if do_ssh "core@$ip" '[ -f /opt/kubernetes/WAITING ]'; then
+            return 0
+        fi
+        ((i++))
+        sleep 1
+    done
+    echo "Timed out waiting for $ip"
+    exit 1
+}
+
+do_ssh "core@$primary_ip" 'bash -s' < "$DIR/get-controller-join.sh" > "$TMPDIR/command.txt"
+do_ssh "core@$primary_ip" sudo cat /opt/secrets/kube-api/encryption-config.yaml > "$TMPDIR/encryption-config.yaml"
+
+for ip in "${secondary_ips[@]}"; do
+    wait_for_controller "$ip"
+    if do_ssh "core@$ip" '[ -f /opt/kubernetes/PROVISIONED ]'; then
+        continue
+    fi
+    scp "$TMPDIR/command.txt" "core@$ip:/opt/secrets/join/command.txt"
+    scp "$TMPDIR/encryption-config.yaml" "core@$ip:/opt/secrets/join/encryption-config.yaml"
+    do_ssh "core@$ip" sudo touch /opt/kubernetes/READY
+done

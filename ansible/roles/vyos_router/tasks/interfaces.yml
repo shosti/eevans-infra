@@ -1,0 +1,24 @@
+---
+- name: Set up LAN-side LAG interface
+  vyos.vyos.vyos_config:
+    lines:
+      - set interfaces bonding bond0 hash-policy 'layer2+3'
+      - set interfaces bonding bond0 mode '802.3ad'
+      - set interfaces bonding bond0 member interface eth1
+      - set interfaces bonding bond0 member interface eth2
+
+- name: Set up untagged interfaces
+  vyos.vyos.vyos_config:
+    lines:
+      - "set interfaces {{ item.type | default('ethernet') }} {{ item.vyos_if }} description '{{ item.description }}'"
+      - "set interfaces {{ item.type | default('ethernet') }} {{ item.vyos_if }} address {{ item.ipv4_addr }}"
+  when: item.vif is not defined
+  loop: "{{ vyos_router_interfaces }}"
+
+- name: Set up VLANs
+  vyos.vyos.vyos_config:
+    lines:
+      - "set interfaces {{ item.type | default('ethernet') }} {{ item.vyos_if }} vif {{ item.vif }} description '{{ item.description }}'"
+      - "set interfaces {{ item.type | default('ethernet') }} {{ item.vyos_if }} vif {{ item.vif }} address {{ item.ipv4_addr }}"
+  when: item.vif is defined
+  loop: "{{ vyos_router_interfaces }}"

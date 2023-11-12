@@ -1,0 +1,1 @@
+export CLEVIS_CONF='{"t":2,"pins":{"tang":[{"url":"http://tang0.eevans.me:8306","thp":"aTMF8PFGzyHEJwyrCZcWVk9Z-i4"},{"url":"http://tang1.eevans.me:8306","thp": "wJtc0RKZJtN9HIVRPSS0leTOO84"}]}}'

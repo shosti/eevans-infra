@@ -1,0 +1,47 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: ingress-nginx
+  namespace: ingress-nginx
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: ingress-nginx
+      version: 4.8.3
+      sourceRef:
+        kind: HelmRepository
+        name: ingress-nginx
+        namespace: flux-system
+      interval: 1m
+  values:
+    controller:
+      allowSnippetAnnotations: true
+      watchIngressWithoutClass: true
+      ingressClassResource:
+        enabled: true
+        default: true
+      service:
+        annotations:
+          metallb.universe.tf/allow-shared-ip: ingress
+        loadBalancerIP: 172.16.16.100
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+      resources:
+        requests:
+          cpu: 300m
+          memory: 1Gi
+        limits:
+          cpu: 500m
+          memory: 1Gi
+      autoscaling:
+        enabled: true
+        minReplicas: 2
+        maxReplicas: 5
+        targetCPUUtilizationPercentage: 75
+        targetMemoryUtilizationPercentage: 75
+    tcp:
+      "26257": crdb/crdb-public:26257

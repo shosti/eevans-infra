@@ -1,0 +1,27 @@
+# {{ ansible_managed }}
+vrrp_script check_alive {
+    script "/usr/local/bin/check_pihole_status.sh"
+    interval 2
+    timeout 4
+    fall 2
+    rise 1
+}
+
+vrrp_instance pihole_{{ ansible_hostname }} {
+    state BACKUP
+    nopreempt
+    interface {{ ansible_default_ipv4.interface }}
+    virtual_router_id 53
+    priority 1
+    advert_int 1
+    virtual_ipaddress {
+        {{ pihole_vip }} dev {{ ansible_default_ipv4.interface }}
+    }
+    authentication {
+        auth_type PASS
+        auth_pass {{ pihole_keepalived_password }}
+    }
+    track_script {
+        check_alive
+    }
+}

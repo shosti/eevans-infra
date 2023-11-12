@@ -1,0 +1,8 @@
+set protocols bgp local-as  {{ vyos_router_bgp_config.local_asn }}
+set protocols bgp parameters router-id {{ vyos_router_bgp_config.router_id }}
+{% for neighbor in vyos_router_bgp_config.neighbors %}
+set protocols bgp neighbor {{ neighbor.address }} remote-as {{ neighbor.asn }}
+{% if neighbor['description'] is defined %}
+set protocols bgp neighbor {{ neighbor.address }} description '{{ neighbor.description }}'
+{% endif %}
+{% endfor %}

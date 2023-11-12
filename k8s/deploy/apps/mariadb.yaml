@@ -1,0 +1,146 @@
+---
+apiVersion: mariadb.mmontes.io/v1alpha1
+kind: MariaDB
+metadata:
+  name: mariadb
+  namespace: mariadb
+spec:
+  rootPasswordSecretKeyRef:
+    name: mariadb
+    key: root-password
+
+  database: mariadb
+  username: mariadb
+  passwordSecretKeyRef:
+    name: mariadb
+    key: password
+
+  image: mariadb:11.0.3
+
+  port: 3306
+
+  replicas: 2
+
+  replication:
+    enabled: true
+    primary:
+      automaticFailover: true
+    replica:
+      waitPoint: AfterSync
+      gtid: CurrentPos
+      replPasswordSecretKeyRef:
+        name: mariadb
+        key: password
+      connectionTimeout: 10s
+      connectionRetries: 10
+      syncTimeout: 10s
+    syncBinlog: true
+
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - topologyKey: "kubernetes.io/hostname"
+
+  tolerations:
+    - key: "mariadb.mmontes.io/ha"
+      operator: "Exists"
+      effect: "NoSchedule"
+
+  podDisruptionBudget:
+    maxUnavailable: 50%
+
+  updateStrategy:
+    type: RollingUpdate
+
+  myCnf: |
+    [mariadb]
+    bind-address=*
+    default_storage_engine=InnoDB
+    binlog_format=row
+    innodb_autoinc_lock_mode=2
+    max_allowed_packet=256M
+
+  resources:
+    limits:
+      cpu: 1
+      memory: 1Gi
+
+  volumeClaimTemplate:
+    storageClassName: local-drive
+    resources:
+      requests:
+        storage: 25Gi
+    accessModes:
+      - ReadWriteOnce
+
+  metrics:
+    exporter:
+      image: prom/mysqld-exporter:v0.15.0
+      args:
+        - --mysqld.address=localhost:3306
+        - --mysqld.username=mariadb-metrics
+      env:
+        - name: MYSQLD_EXPORTER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-metrics-password
+              key: password
+      resources:
+        limits:
+          memory: 128Mi
+          cpu: 50m
+    serviceMonitor:
+      prometheusRelease: kube-prometheus-stack
+      interval: 10s
+      scrapeTimeout: 10s
+---
+apiVersion: mariadb.mmontes.io/v1alpha1
+kind: Backup
+metadata:
+  name: backup
+  namespace: mariadb
+spec:
+  mariaDbRef:
+    name: mariadb
+  schedule:
+    cron: "0 11 * * *"
+  maxRetentionDays: 90
+  storage:
+    volume:
+      nfs:
+        server: storage.dc.eevans.me
+        path: /mnt/storage/files/mariadb_backup
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mariadb
+  namespace: mariadb
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: mariadb
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: mariadb-operator
+      ports:
+        - port: 3306
+        - port: 5555
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              eevans.me/mariadb-access: 'true'
+      ports:
+        - port: 3306
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 9104
+    - from:
+        - podSelector: {}

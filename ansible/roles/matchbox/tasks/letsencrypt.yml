@@ -1,0 +1,63 @@
+- name: Create letsencrypt directories
+  file:
+    path: '{{ item }}'
+    state: directory
+  loop:
+    - /opt/matchbox/letsencrypt
+    - /opt/matchbox/letsencrypt/etc
+    - /opt/matchbox/letsencrypt/var
+
+- name: Copy renewal script
+  template:
+    src: renew-matchbox-cert.j2
+    dest: /usr/local/bin/renew-matchbox-cert
+    mode: '0755'
+
+- name: Check if certificate exists
+  stat:
+    path: '/opt/matchbox/letsencrypt/etc/live/matchbox.{{ matchbox_default_domain }}'
+  register: cert_dir
+  changed_when: false
+
+- name: Create certificate
+  throttle: 1
+  community.docker.docker_container:
+    name: certbot
+    cleanup: true
+    detach: false
+    image: certbot/dns-cloudflare:v2.6.0
+    volumes:
+      - '/opt/matchbox/letsencrypt/etc:/etc/letsencrypt:rw'
+      - '/opt/matchbox/letsencrypt/var:/var/letsencrypt:rw'
+      - '/opt/letsencrypt/secrets:/secrets:ro'
+    # This is hacky and currently relies on the pihole role. Maybe clean it up
+    # some day?
+    command:
+      - certonly
+      - -n
+      - --agree-tos
+      - --email
+      - '{{ matchbox_letsencrypt_email }}'
+      - --dns-cloudflare
+      - --dns-cloudflare-credentials
+      - /secrets/cloudflare.ini
+      - -d
+      - 'matchbox.{{ matchbox_default_domain }}'
+  when: cert_dir.stat.isdir is not defined or cert_dir.stat.isdir == False
+
+- name: Set letsencrypt directory permissions
+  file:
+    dest: /opt/matchbox/letsencrypt
+    state: directory
+    owner: matchbox
+    group: matchbox
+    recurse: yes
+
+- name: Make renewal cron job
+  cron:
+    name: Renew letsencrypt certificate
+    hour: '8'
+    minute: '3'
+    weekday: '0'
+    job: |
+      /usr/local/bin/renew-matchbox-cert

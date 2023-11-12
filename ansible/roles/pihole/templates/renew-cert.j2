@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+#
+# {{ ansible_managed }}
+
+set -euo pipefail
+
+# Check if opt directory is mounted
+systemctl status opt.mount
+
+docker run --rm \
+       -v /opt/letsencrypt/etc:/etc/letsencrypt:rw \
+       -v /opt/letsencrypt/var:/var/letsencrypt:rw \
+       -v /opt/letsencrypt/secrets:/secrets:ro \
+       certbot/dns-cloudflare:v2.6.0 renew
+
+(
+    umask 077
+    cat /opt/letsencrypt/etc/live/pihole.{{ pihole_default_domain }}/{privkey,cert}.pem > /opt/pihole/letsencrypt/combined.pem
+)
+cp /opt/letsencrypt/etc/live/pihole.{{ pihole_default_domain }}/chain.pem /opt/pihole/letsencrypt/chain.pem

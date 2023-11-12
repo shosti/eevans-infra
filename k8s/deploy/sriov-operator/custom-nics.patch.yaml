@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: supported-nic-ids
+  namespace: sriov-network-operator
+data:
+  Intel_x557_AT: "8086 15ad 15a8"
+  Intel_i350: "8086 1521 1520"

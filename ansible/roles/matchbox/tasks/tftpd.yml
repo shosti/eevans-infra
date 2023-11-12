@@ -1,0 +1,17 @@
+- name: Install tftpd-hpa
+  apt:
+    state: present
+    name: tftpd-hpa
+
+- name: Copy bootloader PXE file
+  copy:
+    src: undionly.kpxe
+    dest: /srv/tftp
+    owner: tftp
+    group: tftp
+
+- name: Open tftp port
+  community.general.ufw:
+    rule: allow
+    proto: udp
+    port: tftp

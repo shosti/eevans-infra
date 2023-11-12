@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+#
+# Small script for making RSA DER files, encrypting them, and putting them in
+# the files folder (for usage in, for example, strongswan PKI)
+
+set -euo pipefail
+
+usage() {
+    echo "Usage: $0 <in>"
+    exit 1
+}
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+
+fname="$(basename -- "$1")"
+fname="${fname%.*}"
+dest="$DIR/../files/$fname.der"
+openssl rsa -inform PEM -outform DER -in "$1" -out "$dest"
+ansible-vault encrypt "$dest" --vault-password-file="$DIR/../vault-password"

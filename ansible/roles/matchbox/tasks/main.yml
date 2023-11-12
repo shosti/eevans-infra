@@ -1,0 +1,119 @@
+---
+# tasks file for matchbox
+- name: Get matchbox package
+  get_url:
+    checksum: "sha256:{{ matchbox_sha256sum }}"
+    url: "https://github.com/poseidon/matchbox/releases/download/{{ matchbox_version }}/matchbox-{{ matchbox_version }}-linux-arm64.tar.gz"
+    dest: /tmp/matchbox.tar.gz
+
+- name: Unarchive matchbox
+  unarchive:
+    remote_src: true
+    src: /tmp/matchbox.tar.gz
+    dest: /tmp
+
+- name: Copy matchbox binary
+  copy:
+    remote_src: true
+    src: "/tmp/matchbox-{{ matchbox_version }}-linux-arm64/matchbox"
+    dest: /usr/local/bin/matchbox
+    mode: '0755'
+
+- name: Copy get-flatcar script
+  copy:
+    src: get-flatcar
+    dest: /usr/local/bin/get-flatcar
+    mode: '0755'
+
+- name: Create matchbox group
+  group:
+    name: matchbox
+    system: true
+
+- name: Create matchbox user
+  user:
+    name: matchbox
+    group: matchbox
+    system: true
+
+- name: Create matchbox directory
+  file:
+    state: directory
+    path: /opt/matchbox
+    owner: matchbox
+    group: matchbox
+
+- name: Create matchbox assets directory
+  file:
+    state: directory
+    path: /opt/matchbox/assets
+    owner: matchbox
+    group: matchbox
+
+- name: Create matchbox PKI directory
+  file:
+    state: directory
+    path: /opt/matchbox/pki
+    owner: matchbox
+    group: matchbox
+
+- name: Copy matchbox CA
+  copy:
+    src: matchbox-ca.crt
+    dest: /opt/matchbox/pki/ca.crt
+    owner: matchbox
+    group: matchbox
+
+- name: Copy matchbox TLS cert
+  copy:
+    src: matchbox-server.crt
+    dest: /opt/matchbox/pki/server.crt
+    owner: matchbox
+    group: matchbox
+  notify: restart matchbox
+
+- name: Write matchbox TLS key
+  copy:
+    content: "{{ matchbox_server_tls_key }}"
+    dest: /opt/matchbox/pki/server.key
+    owner: matchbox
+    group: matchbox
+    mode: '0600'
+
+- include_tasks: letsencrypt.yml
+
+- name: Install systemd service
+  template:
+    src: matchbox.service.j2
+    dest: /etc/systemd/system/matchbox.service
+  notify: restart matchbox
+
+- name: Flush handlers to reload systemd service
+  meta: flush_handlers
+
+- name: Start matchbox
+  systemd:
+    name: matchbox
+    enabled: true
+    state: started
+
+- name: Allow matchbox firewall access
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    port: "{{ item }}"
+  loop:
+    - "8880"
+    - "8081"
+
+- name: Check if flatcar assets have been downloaded
+  stat:
+    path: "/opt/matchbox/assets/flatcar/{{ matchbox_flatcar_version }}/COMPLETE"
+  register: assets_downloaded
+  changed_when: false
+
+- name: Download flatcar assets
+  command: "get-flatcar {{ matchbox_flatcar_channel }} {{ matchbox_flatcar_version }} /opt/matchbox/assets"
+  when: assets_downloaded.stat.exists is not defined or not assets_downloaded.stat.exists
+
+- include_tasks: tftpd.yml

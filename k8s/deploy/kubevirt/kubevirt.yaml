@@ -1,0 +1,18 @@
+---
+apiVersion: kubevirt.io/v1
+kind: KubeVirt
+metadata:
+  name: kubevirt
+  namespace: kubevirt
+spec:
+  certificateRotateStrategy: {}
+  configuration:
+    developerConfiguration:
+      featureGates: ["HostDisk", "HostDevices", "ExpandDisks"]
+    permittedHostDevices:
+      pciHostDevices:
+      - pciVendorSelector: "1000:0072"
+        resourceName: "broadcom.com/LSI_SAS2008"
+  customizeComponents: {}
+  imagePullPolicy: IfNotPresent
+  workloadUpdateStrategy: {}

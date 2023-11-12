@@ -1,0 +1,18 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Tang Server socket
+Requires=tangd-keygen.service
+Requires=tangd-update.service
+Requires=tangd-update.path
+After=tangd-keygen.service
+After=tangd-update.service
+Requires=opt.automount
+After=opt.automount
+DefaultDependencies=no
+
+[Socket]
+ListenStream={{ tang_server_port }}
+Accept=true
+
+[Install]
+WantedBy=multi-user.target

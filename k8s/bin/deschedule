@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#
+# Run this when nodes are super unbalanced. It's kind of destructive though.
+
+set -euo pipefail
+
+kustomize build 'github.com/kubernetes-sigs/descheduler/kubernetes/job?ref=v0.24.1' | kubectl apply -f -

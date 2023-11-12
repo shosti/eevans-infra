@@ -1,0 +1,16 @@
+- name: Allow all local ICMP
+  vyos.vyos.vyos_config:
+    lines:
+      - set firewall all-ping enable
+
+- name: Set firewall defaults
+  vyos.vyos.vyos_config:
+    lines:
+      - set firewall state-policy established action accept
+      - set firewall state-policy related action accept
+      - set firewall state-policy invalid action accept
+      - set firewall state-policy invalid log-level notice
+
+- name: Configure firewall
+  vyos.vyos.vyos_config:
+    src: firewall.j2

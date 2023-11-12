@@ -1,0 +1,17 @@
+{{- if .Values.tls.enabled }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "mosquitto.fullname" . }}
+  labels:
+    {{- include "mosquitto.labels" . | nindent 4 }}
+spec:
+  dnsNames:
+    {{- toYaml .Values.tls.dnsNames | nindent 4 }}
+  issuerRef:
+    {{- toYaml .Values.tls.issuerRef | nindent 4 }}
+  secretName: {{ .Values.tls.secretName }}
+  usages:
+    - digital signature
+    - key encipherment
+{{- end }}

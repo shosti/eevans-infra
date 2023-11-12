@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "prometheus-graphite-exporter.fullname" . }}
+  labels:
+    {{- include "prometheus-graphite-exporter.labels" . | nindent 4 }}
+data:
+  graphite_mapping.conf: |
+    mappings:
+      {{- toYaml .Values.config.mappings | nindent 6}}

@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Tang Server
+Documentation=man:tangd(8)
+
+[Service]
+StandardInput=socket
+StandardOutput=socket
+StandardError=journal
+ExecStart=/usr/lib/aarch64-linux-gnu/tangd {{ tang_server_cache_dir }}

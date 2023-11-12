@@ -1,0 +1,5 @@
+galaxy_info:
+  author: Emanuel Evans
+  license: MIT
+  min_ansible_version: 2.1
+dependencies: []

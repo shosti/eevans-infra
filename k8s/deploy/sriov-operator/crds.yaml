@@ -1,0 +1,638 @@
+apiVersion: v1
+items:
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.4.1
+    name: sriovibnetworks.sriovnetwork.openshift.io
+  spec:
+    group: sriovnetwork.openshift.io
+    names:
+      kind: SriovIBNetwork
+      listKind: SriovIBNetworkList
+      plural: sriovibnetworks
+      singular: sriovibnetwork
+    scope: Namespaced
+    versions:
+    - name: v1
+      schema:
+        openAPIV3Schema:
+          description: SriovIBNetwork is the Schema for the sriovibnetworks API
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: SriovIBNetworkSpec defines the desired state of SriovIBNetwork
+              properties:
+                capabilities:
+                  description: 'Capabilities to be configured for this network. Capabilities
+                    supported: (infinibandGUID), e.g. ''{"infinibandGUID": true}'''
+                  type: string
+                ipam:
+                  description: IPAM configuration to be used for this network.
+                  type: string
+                linkState:
+                  description: VF link state (enable|disable|auto)
+                  enum:
+                  - auto
+                  - enable
+                  - disable
+                  type: string
+                metaPlugins:
+                  description: MetaPluginsConfig configuration to be used in order
+                    to chain metaplugins to the sriov interface returned by the operator.
+                  type: string
+                networkNamespace:
+                  description: Namespace of the NetworkAttachmentDefinition custom
+                    resource
+                  type: string
+                resourceName:
+                  description: SRIOV Network device plugin endpoint resource name
+                  type: string
+              required:
+              - resourceName
+              type: object
+            status:
+              description: SriovIBNetworkStatus defines the observed state of SriovIBNetwork
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.4.1
+    name: sriovnetworknodepolicies.sriovnetwork.openshift.io
+  spec:
+    group: sriovnetwork.openshift.io
+    names:
+      kind: SriovNetworkNodePolicy
+      listKind: SriovNetworkNodePolicyList
+      plural: sriovnetworknodepolicies
+      singular: sriovnetworknodepolicy
+    scope: Namespaced
+    versions:
+    - name: v1
+      schema:
+        openAPIV3Schema:
+          description: SriovNetworkNodePolicy is the Schema for the sriovnetworknodepolicies
+            API
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: SriovNetworkNodePolicySpec defines the desired state of
+                SriovNetworkNodePolicy
+              properties:
+                deviceType:
+                  description: The driver type for configured VFs. Allowed value "netdevice",
+                    "vfio-pci". Defaults to netdevice.
+                  enum:
+                  - netdevice
+                  - vfio-pci
+                  type: string
+                eSwitchMode:
+                  description: NIC Device Mode. Allowed value "legacy","switchdev".
+                  enum:
+                  - legacy
+                  - switchdev
+                  type: string
+                isRdma:
+                  description: RDMA mode. Defaults to false.
+                  type: boolean
+                linkType:
+                  description: NIC Link Type. Allowed value "eth", "ETH", "ib", and
+                    "IB".
+                  enum:
+                  - eth
+                  - ETH
+                  - ib
+                  - IB
+                  type: string
+                mtu:
+                  description: MTU of VF
+                  minimum: 1
+                  type: integer
+                needVhostNet:
+                  description: mount vhost-net device. Defaults to false.
+                  type: boolean
+                nicSelector:
+                  description: NicSelector selects the NICs to be configured
+                  properties:
+                    deviceID:
+                      description: The device hex code of SR-IoV device. Allowed value
+                        "0d58", "1572", "158b", "1013", "1015", "1017", "101b".
+                      type: string
+                    netFilter:
+                      description: Infrastructure Networking selection filter. Allowed
+                        value "openstack/NetworkID:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                      type: string
+                    pfNames:
+                      description: Name of SR-IoV PF.
+                      items:
+                        type: string
+                      type: array
+                    rootDevices:
+                      description: PCI address of SR-IoV PF.
+                      items:
+                        type: string
+                      type: array
+                    vendor:
+                      description: The vendor hex code of SR-IoV device. Allowed value
+                        "8086", "15b3".
+                      type: string
+                  type: object
+                nodeSelector:
+                  additionalProperties:
+                    type: string
+                  description: NodeSelector selects the nodes to be configured
+                  type: object
+                numVfs:
+                  description: Number of VFs for each PF
+                  minimum: 0
+                  type: integer
+                priority:
+                  description: Priority of the policy, higher priority policies can
+                    override lower ones.
+                  maximum: 99
+                  minimum: 0
+                  type: integer
+                resourceName:
+                  description: SRIOV Network device plugin endpoint resource name
+                  type: string
+              required:
+              - nicSelector
+              - nodeSelector
+              - numVfs
+              - resourceName
+              type: object
+            status:
+              description: SriovNetworkNodePolicyStatus defines the observed state
+                of SriovNetworkNodePolicy
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.4.1
+    name: sriovnetworknodestates.sriovnetwork.openshift.io
+  spec:
+    group: sriovnetwork.openshift.io
+    names:
+      kind: SriovNetworkNodeState
+      listKind: SriovNetworkNodeStateList
+      plural: sriovnetworknodestates
+      singular: sriovnetworknodestate
+    scope: Namespaced
+    versions:
+    - name: v1
+      schema:
+        openAPIV3Schema:
+          description: SriovNetworkNodeState is the Schema for the sriovnetworknodestates
+            API
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: SriovNetworkNodeStateSpec defines the desired state of
+                SriovNetworkNodeState
+              properties:
+                dpConfigVersion:
+                  type: string
+                interfaces:
+                  items:
+                    properties:
+                      eSwitchMode:
+                        type: string
+                      linkType:
+                        type: string
+                      mtu:
+                        type: integer
+                      name:
+                        type: string
+                      numVfs:
+                        type: integer
+                      pciAddress:
+                        type: string
+                      vfGroups:
+                        items:
+                          properties:
+                            deviceType:
+                              type: string
+                            mtu:
+                              type: integer
+                            policyName:
+                              type: string
+                            resourceName:
+                              type: string
+                            vfRange:
+                              type: string
+                          type: object
+                        type: array
+                    required:
+                    - pciAddress
+                    type: object
+                  type: array
+              type: object
+            status:
+              description: SriovNetworkNodeStateStatus defines the observed state
+                of SriovNetworkNodeState
+              properties:
+                interfaces:
+                  items:
+                    properties:
+                      Vfs:
+                        items:
+                          properties:
+                            Vlan:
+                              type: integer
+                            assigned:
+                              type: string
+                            deviceID:
+                              type: string
+                            driver:
+                              type: string
+                            mac:
+                              type: string
+                            mtu:
+                              type: integer
+                            name:
+                              type: string
+                            pciAddress:
+                              type: string
+                            vendor:
+                              type: string
+                            vfID:
+                              type: integer
+                          required:
+                          - pciAddress
+                          - vfID
+                          type: object
+                        type: array
+                      deviceID:
+                        type: string
+                      driver:
+                        type: string
+                      eSwitchMode:
+                        type: string
+                      linkSpeed:
+                        type: string
+                      linkType:
+                        type: string
+                      mac:
+                        type: string
+                      mtu:
+                        type: integer
+                      name:
+                        type: string
+                      netFilter:
+                        type: string
+                      numVfs:
+                        type: integer
+                      pciAddress:
+                        type: string
+                      totalvfs:
+                        type: integer
+                      vendor:
+                        type: string
+                    required:
+                    - pciAddress
+                    type: object
+                  type: array
+                lastSyncError:
+                  type: string
+                syncStatus:
+                  type: string
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.4.1
+    name: sriovnetworkpoolconfigs.sriovnetwork.openshift.io
+  spec:
+    group: sriovnetwork.openshift.io
+    names:
+      kind: SriovNetworkPoolConfig
+      listKind: SriovNetworkPoolConfigList
+      plural: sriovnetworkpoolconfigs
+      singular: sriovnetworkpoolconfig
+    scope: Namespaced
+    versions:
+    - name: v1
+      schema:
+        openAPIV3Schema:
+          description: SriovNetworkPoolConfig is the Schema for the sriovnetworkpoolconfigs
+            API
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: SriovNetworkPoolConfigSpec defines the desired state of
+                SriovNetworkPoolConfig
+              properties:
+                ovsHardwareOffloadConfig:
+                  description: OvsHardwareOffloadConfig describes the OVS HWOL configuration
+                    for selected Nodes
+                  properties:
+                    name:
+                      description: 'Name is mandatory and must be unique. On Kubernetes:
+                        Name is the name of OvsHardwareOffloadConfig On OpenShift:
+                        Name is the name of MachineConfigPool to be enabled with OVS
+                        hardware offload'
+                      type: string
+                  type: object
+              type: object
+            status:
+              description: SriovNetworkPoolConfigStatus defines the observed state
+                of SriovNetworkPoolConfig
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.4.1
+    name: sriovnetworks.sriovnetwork.openshift.io
+  spec:
+    group: sriovnetwork.openshift.io
+    names:
+      kind: SriovNetwork
+      listKind: SriovNetworkList
+      plural: sriovnetworks
+      singular: sriovnetwork
+    scope: Namespaced
+    versions:
+    - name: v1
+      schema:
+        openAPIV3Schema:
+          description: SriovNetwork is the Schema for the sriovnetworks API
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: SriovNetworkSpec defines the desired state of SriovNetwork
+              properties:
+                capabilities:
+                  description: 'Capabilities to be configured for this network. Capabilities
+                    supported: (mac|ips), e.g. ''{"mac": true}'''
+                  type: string
+                ipam:
+                  description: IPAM configuration to be used for this network.
+                  type: string
+                linkState:
+                  description: VF link state (enable|disable|auto)
+                  enum:
+                  - auto
+                  - enable
+                  - disable
+                  type: string
+                maxTxRate:
+                  description: Maximum tx rate, in Mbps, for the VF. Defaults to 0
+                    (no rate limiting)
+                  minimum: 0
+                  type: integer
+                metaPlugins:
+                  description: MetaPluginsConfig configuration to be used in order
+                    to chain metaplugins to the sriov interface returned by the operator.
+                  type: string
+                minTxRate:
+                  description: Minimum tx rate, in Mbps, for the VF. Defaults to 0
+                    (no rate limiting). min_tx_rate should be <= max_tx_rate.
+                  minimum: 0
+                  type: integer
+                networkNamespace:
+                  description: Namespace of the NetworkAttachmentDefinition custom
+                    resource
+                  type: string
+                resourceName:
+                  description: SRIOV Network device plugin endpoint resource name
+                  type: string
+                spoofChk:
+                  description: VF spoof check, (on|off)
+                  enum:
+                  - "on"
+                  - "off"
+                  type: string
+                trust:
+                  description: VF trust mode (on|off)
+                  enum:
+                  - "on"
+                  - "off"
+                  type: string
+                vlan:
+                  description: VLAN ID to assign for the VF. Defaults to 0.
+                  maximum: 4096
+                  minimum: 0
+                  type: integer
+                vlanQoS:
+                  description: VLAN QoS ID to assign for the VF. Defaults to 0.
+                  maximum: 7
+                  minimum: 0
+                  type: integer
+              required:
+              - resourceName
+              type: object
+            status:
+              description: SriovNetworkStatus defines the observed state of SriovNetwork
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.4.1
+    name: sriovoperatorconfigs.sriovnetwork.openshift.io
+  spec:
+    group: sriovnetwork.openshift.io
+    names:
+      kind: SriovOperatorConfig
+      listKind: SriovOperatorConfigList
+      plural: sriovoperatorconfigs
+      singular: sriovoperatorconfig
+    scope: Namespaced
+    versions:
+    - name: v1
+      schema:
+        openAPIV3Schema:
+          description: SriovOperatorConfig is the Schema for the sriovoperatorconfigs
+            API
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: SriovOperatorConfigSpec defines the desired state of SriovOperatorConfig
+              properties:
+                configDaemonNodeSelector:
+                  additionalProperties:
+                    type: string
+                  description: NodeSelector selects the nodes to be configured
+                  type: object
+                disableDrain:
+                  description: Flag to disable nodes drain during debugging
+                  type: boolean
+                enableInjector:
+                  description: Flag to control whether the network resource injector
+                    webhook shall be deployed
+                  type: boolean
+                enableOperatorWebhook:
+                  description: Flag to control whether the operator admission controller
+                    webhook shall be deployed
+                  type: boolean
+                enableOvsOffload:
+                  description: Flag to enable OVS hardware offload. Set to 'true'
+                    to provision switchdev-configuration.service and enable OpenvSwitch
+                    hw-offload on nodes.
+                  type: boolean
+                logLevel:
+                  description: Flag to control the log verbose level of the operator.
+                    Set to '0' to show only the basic logs. And set to '2' to show
+                    all the available logs.
+                  maximum: 2
+                  minimum: 0
+                  type: integer
+              type: object
+            status:
+              description: SriovOperatorConfigStatus defines the observed state of
+                SriovOperatorConfig
+              properties:
+                injector:
+                  description: Show the runtime status of the network resource injector
+                    webhook
+                  type: string
+                operatorWebhook:
+                  description: Show the runtime status of the operator admission controller
+                    webhook
+                  type: string
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
+kind: List
+metadata: {}

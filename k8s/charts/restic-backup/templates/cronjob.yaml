@@ -1,0 +1,65 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "restic-backup.fullname" . }}
+  labels:
+    {{- include "restic-backup.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          {{- with .Values.podAnnotations }}
+          annotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          labels:
+            {{- include "restic-backup.selectorLabels" . | nindent 12 }}
+        spec:
+          restartPolicy: OnFailure
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          serviceAccountName: {{ include "restic-backup.serviceAccountName" . }}
+          securityContext:
+            {{- toYaml .Values.podSecurityContext | nindent 12 }}
+          containers:
+            - name: {{ .Chart.Name }}
+              securityContext:
+                {{- toYaml .Values.securityContext | nindent 16 }}
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              resources:
+                {{- toYaml .Values.resources | nindent 16 }}
+              env:
+                - name: RESTIC_CACHE_DIR
+                  value: /cache
+                - name: RESTIC_REPOSITORY
+                  value: {{ .Values.repositoryName }}
+              envFrom:
+                - secretRef:
+                    name: {{ .Values.secretName }}
+              volumeMounts:
+                - name: data
+                  mountPath: /data
+                  readOnly: true
+                - name: cache
+                  mountPath: /cache
+                  readOnly: false
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+
+                  restic --verbose backup /data
+                  wget -O- "{{ .Values.healthCheckURL }}"
+          volumes:
+            - name: data
+              persistentVolumeClaim:
+                claimName: {{ .Values.data.claimName }}
+            - name: cache
+              persistentVolumeClaim:
+                claimName: {{ .Release.Name }}-cache

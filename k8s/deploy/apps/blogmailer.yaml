@@ -1,0 +1,12 @@
+---
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: blogmailer-state
+  namespace: listmonk
+  labels:
+    app.kubernetes.io/name: blogmailer
+spec:
+  generateBucketName: blogmailer-state
+  storageClassName: rook-ceph-bucket
+---

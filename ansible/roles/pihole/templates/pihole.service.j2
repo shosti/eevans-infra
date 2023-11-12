@@ -1,0 +1,30 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Pi-hole
+After=docker.service
+{% if rpi_data_volume_tang_server is defined %}
+After=opt.automount
+Requires=opt.automount
+{% endif %}
+Requires=docker.service
+Wants=unbound.service
+
+[Service]
+TimeoutStartSec=0
+Restart=always
+ExecStartPre=-/usr/bin/docker stop pihole
+ExecStartPre=-/usr/bin/docker rm pihole
+ExecStart=/usr/bin/docker run --rm --name pihole \
+          --hostname pi.hole \
+          -v '/opt/pihole/pihole:/etc/pihole:rw' \
+          -v '/opt/pihole/dnsmasq.d:/etc/dnsmasq.d:rw' \
+          -v '/opt/pihole/letsencrypt:/etc/letsencrypt:ro' \
+          -v '/opt/pihole/lighttpd/external.conf:/etc/lighttpd/external.conf:rw' \
+          --env-file /opt/pihole/env \
+          --dns=127.0.0.1 \
+          --dns=1.1.1.1 \
+          -p 80:80 -p 443:443 -p 53:53/tcp -p 53:53/udp \
+          pihole/pihole:2022.12.1
+
+[Install]
+WantedBy=multi-user.target

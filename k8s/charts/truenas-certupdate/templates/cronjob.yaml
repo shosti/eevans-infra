@@ -1,0 +1,44 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    {{- include "truenas-certupdate.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.schedule | quote }}
+  failedJobsHistoryLimit: 0 # random failures cause annoying alerts
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "truenas-certupdate.labels" . | nindent 12 }}
+        spec:
+        {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+        {{- end }}
+          restartPolicy: OnFailure
+          containers:
+            - name: {{ .Chart.Name }}
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              resources:
+                {{- toYaml .Values.resources | nindent 16 }}
+              env:
+                - name: CONFIG_FILE
+                  value: /config/deploy_config
+              volumeMounts:
+                - name: certs
+                  mountPath: /certs
+                  readOnly: true
+                - name: config
+                  mountPath: /config
+                  readOnly: true
+          volumes:
+            - name: certs
+              secret:
+                secretName: {{ .Values.tlsSecretName }}
+            - name: config
+              secret:
+                secretName: {{ .Values.configSecretName }}

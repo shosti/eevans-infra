@@ -1,0 +1,59 @@
+{# Configure zones #}
+set zone-policy zone LOCAL local-zone
+{% set all_interfaces = vyos_router_interfaces | union(vyos_router_wireguard_interfaces) | union([{ 'name': 'LOCAL', 'description': 'Router-local zone' }]) %}
+{% for interface in all_interfaces %}
+{% set zone = interface['zone'] if interface['zone'] is defined else interface['name'] %}
+{% if interface['zone'] is not defined %}
+set zone-policy zone {{ zone }} description '{{ interface['description'] }}'
+{% endif %}
+{% if interface['vif'] is defined %}
+set zone-policy zone {{ zone }} interface {{ interface['vyos_if'] }}.{{ interface['vif'] }}
+{% elif interface['vyos_if'] is defined %}
+set zone-policy zone {{ zone }} interface {{ interface['vyos_if'] }}
+{% endif %}
+set zone-policy zone {{ zone }} default-action drop
+{% endfor %}
+
+{# Configure address groups #}
+{% for group in vyos_router_address_groups %}
+set firewall group address-group {{ group['name'] }} description "{{ group['description'] }}"
+{% for addr in group['addresses'] %}
+set firewall group address-group {{ group['name'] }} address {{ addr }}
+{% endfor %}
+{% endfor %}
+
+{# Configure rulesets #}
+{% for ruleset in vyos_router_firewall_rulesets %}
+{% set ruleset_name = ruleset['from'] + '-' + ruleset['to'] %}
+{# Enable ping but default to dropping #}
+set firewall name {{ ruleset_name }} default-action drop
+set firewall name {{ ruleset_name }} enable-default-log
+{% if ruleset['block_invalid'] is not defined or ruleset['block_invalid'] %}
+set firewall name {{ ruleset_name }} rule 1 action drop
+set firewall name {{ ruleset_name }} rule 1 log enable
+set firewall name {{ ruleset_name }} rule 1 state invalid enable
+{% endif %}
+set firewall name {{ ruleset_name }} rule 10 action accept
+set firewall name {{ ruleset_name }} rule 10 protocol icmp
+{# Explicitly allow traffic #}
+{% if ruleset['allow_rules'] is defined %}
+{% for allow in ruleset['allow_rules'] %}
+{% set rule = vyos_router_ruleset_rules[allow['rule']] %}
+set firewall name {{ ruleset_name }} rule {{ rule['number'] }} action accept
+set firewall name {{ ruleset_name }} rule {{ rule['number'] }} protocol {{ rule['protocol'] }}
+{% if rule['port'] is defined %}
+set firewall name {{ ruleset_name }} rule {{ rule['number'] }} destination port {{ rule['port'] }}
+{% endif %}
+{% if allow['src_group'] is defined %}
+set firewall name {{ ruleset_name }} rule {{ rule['number'] }} source group address-group {{ allow['src_group'] }}
+{% elif allow['dest_group'] is defined %}
+set firewall name {{ ruleset_name }} rule {{ rule['number'] }} destination group address-group {{ allow['dest_group'] }}
+{% endif %}
+{% if rule['name'] is defined %}
+set firewall name {{ ruleset_name }} rule {{ rule['number'] }} description 'Allow {{ rule['name'] }}'
+{% endif %}
+{% endfor %}
+{% endif %}
+{# Associate firewall with zones #}
+set zone-policy zone {{ ruleset['to'] }} from {{ ruleset['from'] }} firewall name {{ ruleset_name }}
+{% endfor %}

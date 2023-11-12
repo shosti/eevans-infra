@@ -1,0 +1,17 @@
+---
+# tasks file for rsyslog_promtail
+- name: Install rsyslog
+  apt:
+    name: rsyslog
+
+- name: Enable rsyslog
+  systemd:
+    name: rsyslog
+    enabled: true
+    state: started
+
+- name: Add syslog config
+  template:
+    src: rsyslog-promtail.conf.j2
+    dest: /etc/rsyslog.d/99-promtail.conf
+  notify: restart rsyslog

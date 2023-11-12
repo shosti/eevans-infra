@@ -1,0 +1,43 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: oauth2-proxy
+  namespace: oauth2-proxy
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: ./k8s/charts/oauth2-proxy
+      sourceRef:
+        kind: GitRepository
+        name: eevans-infra
+        namespace: flux-system
+      interval: 1m
+  values:
+    emailDomain: eevans.co
+    keycloak:
+      host: keycloak.eevans.me
+      group: /k8s-access
+      realm: eevans-lan
+
+    ingress:
+      ingressClassName: nginx
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+      hosts:
+        - alertmanager.eevans.me
+        - ceph.eevans.me
+        - esphome.eevans.me
+        - falco.eevans.me
+        - hubble.eevans.me
+        - kibana.eevans.me
+        - prometheus.eevans.me
+
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        cpu: 250m
+        memory: 64Mi

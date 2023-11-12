@@ -1,0 +1,2 @@
+ubuntu_auto_reboot_time: "13:00"
+ubuntu_is_vm: true

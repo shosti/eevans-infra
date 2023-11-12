@@ -1,0 +1,34 @@
+# Default values for truenas-certupdate.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+schedule: '0 0 * * 5'
+
+image:
+  repository: harbor.eevans.me/library/truenas-certupdate
+  tag: ""
+  pullPolicy: IfNotPresent
+
+configSecretName: truenas-certupdate-config
+tlsSecretName: truenas-certupdate-tls
+
+dnsNames:
+  - truenas.example.com
+
+issuerRef:
+  group: cert-manager.io
+  kind: ClusterIssuer
+  name: letsencrypt-prod
+
+resources:
+  requests:
+    memory: 128Mi
+    cpu: 0.5
+  limits:
+    memory: 128Mi
+    cpu: 0.5
+
+nameOverride: ""
+fullnameOverride: ""

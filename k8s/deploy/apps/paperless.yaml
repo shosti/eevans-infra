@@ -1,0 +1,198 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: paperless-redis
+  namespace: paperless
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: redis
+      version: 17.7.1
+      sourceRef:
+        kind: HelmRepository
+        name: bitnami
+        namespace: flux-system
+      interval: 1m
+  values:
+    architecture: standalone
+    auth:
+      enabled: false
+    master:
+      persistence:
+        size: 2Gi
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: paperless-db
+  namespace: paperless
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: postgresql
+      version: 12.1.14
+      sourceRef:
+        kind: HelmRepository
+        name: bitnami
+        namespace: flux-system
+      interval: 1m
+  values:
+    auth:
+      username: paperless
+      database: paperless
+      existingSecret: paperless-db
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: paperless
+  namespace: paperless
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: ./k8s/charts/paperless
+      sourceRef:
+        kind: GitRepository
+        name: eevans-infra
+        namespace: flux-system
+      interval: 1m
+  values:
+    redis:
+      url: redis://paperless-redis-master:6379
+
+    postgres:
+      host: paperless-db-postgresql
+
+    volumes:
+      data:
+        nfs:
+          server: storage.dc.eevans.me
+          path: /mnt/storage/files/paperless/data
+      media:
+        nfs:
+          server: storage.dc.eevans.me
+          path: /mnt/storage/files/paperless/media
+      consume:
+        nfs:
+          server: storage.dc.eevans.me
+          path: /mnt/storage/files/paperless/consume
+      export:
+        nfs:
+          server: storage.dc.eevans.me
+          path: /mnt/storage/files/paperless/export
+
+    ingress:
+      enabled: true
+      className: cilium
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+      hosts:
+        - host: paperless.eevans.me
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - secretName: paperless-tls
+          hosts:
+            - paperless.eevans.me
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: redis
+  namespace: paperless
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: paperless-redis
+  policyTypes:
+    - Egress
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: paperless
+      ports:
+        - port: 6379
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 9121
+  egress: []
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres
+  namespace: paperless
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: paperless-db
+  policyTypes:
+    - Egress
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: paperless
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: postgres-config-paperless
+      ports:
+        - port: 5432
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 9187
+  egress: []
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: postgres-config-paperless
+  namespace: paperless
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: ./k8s/charts/postgres-config
+      sourceRef:
+        kind: GitRepository
+        name: eevans-infra
+        namespace: flux-system
+      interval: 1m
+  values:
+    postgresService: paperless-db-postgresql-hl
+
+    backups:
+      enabled: true
+      repositoryName: b2:eevans-lan-db-backups:paperless
+      postgresql:
+        host: paperless-db-postgresql-0
+        database: paperless
+        user: paperless
+      postgresCredentials:
+        name: paperless-db
+        key: password
+      healthCheckURL: https://hc-ping.com/49d29b51-15bc-41f3-82a9-2f96e8529a68
+      image:
+        tag: v5

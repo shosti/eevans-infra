@@ -1,0 +1,3 @@
+# Disable all shutdown-related functionality to avoid unpleasant surprises
+
+echo "apccontrol: called with $1"

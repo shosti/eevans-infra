@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flatcar-linux-update-operator
+  namespace: reboot-coordinator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flatcar-linux-update-operator
+  template:
+    metadata:
+      labels:
+        app: flatcar-linux-update-operator
+    spec:
+      serviceAccountName: flatcar-linux-update-operator-sa
+      containers:
+      - name: update-operator
+        image: ghcr.io/flatcar-linux/flatcar-linux-update-operator:v0.8.0
+        command:
+        - "/bin/update-operator"
+        - --reboot-window-start=08:00
+        - --reboot-window-length=3h
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule

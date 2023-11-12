@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+#
+# Reencrypt all secrets
+
+set -xeuo pipefail
+shopt -s nullglob
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+
+
+(
+    cd "$DIR/../secrets"
+    for ns in *; do
+        for f in "$ns"/*; do
+            sops -d "$f" \
+                 > "$f.bak.yaml"
+            sops -e "$f.bak.yaml" > "$f"
+            rm "$f.bak.yaml"
+        done
+    done
+)

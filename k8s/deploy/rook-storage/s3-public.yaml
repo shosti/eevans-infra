@@ -1,0 +1,27 @@
+---
+apiVersion: ceph.rook.io/v1
+kind: CephObjectStore
+metadata:
+  name: s3-public
+  namespace: rook-ceph
+spec:
+  metadataPool:
+    failureDomain: host
+    replicated:
+      size: 3
+  dataPool:
+    failureDomain: host
+    replicated:
+      size: 3
+  preservePoolsOnDelete: false
+  gateway:
+    dashboardEnabled: true
+    sslCertificateRef:
+    port: 80
+    instances: 2
+    labels:
+      eevans.me/public: "true"
+    resources:
+      limits:
+        memory: 512Mi
+        cpu: 300m

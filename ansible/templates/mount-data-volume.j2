@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+#
+# {{ ansible_managed }}
+
+set -euo pipefail
+
+cryptsetup open /dev/disk/by-uuid/{{ rpi_data_volume_uuid }} cryptdata
+systemctl start opt.mount

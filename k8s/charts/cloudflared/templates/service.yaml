@@ -1,0 +1,18 @@
+{{- if .Values.metrics.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cloudflared.fullname" . }}-metrics
+  labels:
+    {{- include "cloudflared.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.metrics.port }}
+      targetPort: metrics
+      protocol: TCP
+      name: http-metrics
+  selector:
+    {{- include "cloudflared.selectorLabels" . | nindent 4 }}
+{{- end }}

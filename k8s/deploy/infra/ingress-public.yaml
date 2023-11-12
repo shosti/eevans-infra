@@ -1,0 +1,130 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: cloudflared
+  namespace: ingress-public
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: ./k8s/charts/cloudflared
+      sourceRef:
+        kind: GitRepository
+        name: eevans-infra
+        namespace: flux-system
+      interval: 1m
+  values:
+    replicaCount: 2
+    podDisruptionBudget:
+      enabled: true
+    serviceMonitor:
+      enabled: true
+    config:
+      tunnel: 30669ff6-6a94-4020-b93a-6c6232e8ed34
+      url: http://cilium-gateway-ingress-public:80
+    resources:
+      requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                - cloudflared
+            topologyKey: kubernetes.io/hostname
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: ingress-public
+  namespace: ingress-public
+spec:
+  gatewayClassName: cilium
+  listeners:
+  - protocol: HTTP
+    port: 80
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: Selector
+        selector:
+          matchLabels:
+            eevans.me/public: "true"
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cloudflared
+  namespace: ingress-public
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/instance: cloudflared
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: monitoring
+      toPorts:
+        - ports:
+            - port: "5000"
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+          rules:
+            dns:
+              - matchPattern: "*"
+    - toFQDNs:
+        - matchName: region1.v2.argotunnel.com
+        - matchName: region2.v2.argotunnel.com
+      toPorts:
+        - ports:
+            - port: "7844"
+    - toFQDNs:
+        - matchName: update.argotunnel.com
+      toPorts:
+        - ports:
+            - port: "443"
+    - toFQDNs:
+        - matchName: api.cloudflare.com
+      toPorts:
+        - ports:
+            - port: "443"
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/instance: ingress-public
+      toPorts:
+        - ports:
+            - port: "80"
+            - port: "443"
+    - toEndpoints:
+        - matchLabels:
+            k8s:eevans.me/public: "true"
+          matchExpressions:
+            # Note to future self: after hours of debugging, it seems that L7
+            # policies only work with *explicit* namespace matching. See
+            # https://docs.cilium.io/en/stable/security/policy/kubernetes/#namespaces
+            # for the most relevant docs I could find, although even those are a
+            # bit vague.
+            - key: k8s:io.kubernetes.pod.namespace
+              operator: In
+              values:
+                - eevansco
+                - ghost
+                - listmonk
+                - rook-ceph

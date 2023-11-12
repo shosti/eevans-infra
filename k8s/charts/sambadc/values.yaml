@@ -1,0 +1,143 @@
+# Default values for sambadc.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+image:
+  repository: harbor.eevans.me/library/sambadc
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+# Should container ADMIN_PASS key
+envSecret: sambadc-secrets
+
+config:
+  realm: AD.EXAMPLE.TEST
+  domain: ad
+  primaryDCIP: 172.16.16.88
+  secondaryDCIP: 172.16.16.89
+  primaryHostname: dc1
+  secondaryHostname: dc2
+
+service:
+  type: LoadBalancer
+  # See https://wiki.samba.org/index.php/Samba_AD_DC_Port_Usage
+  ports:
+    - protocol: TCP
+      name: dns-tcp
+      port: 53
+    - protocol: UDP
+      name: dns-udp
+      port: 53
+    - protocol: UDP
+      name: kerberos
+      port: 88
+    - protocol: TCP
+      name: endpointmapper
+      port: 135
+    - protocol: UDP
+      name: netbios-name
+      port: 137
+    - protocol: UDP
+      name: netbios-datagram
+      port: 138
+    - protocol: TCP
+      name: netbios-session
+      port: 139
+    - protocol: UDP
+      name: ldap-udp
+      port: 389
+    - protocol: TCP
+      name: ldap-tcp
+      port: 389
+    - protocol: TCP
+      name: smb-tcp
+      port: 445
+    - protocol: UDP
+      name: kpasswd-udp
+      port: 464
+    - protocol: TCP
+      name: kpasswd-tcp
+      port: 464
+    - protocol: TCP
+      name: ldaps
+      port: 636
+    - protocol: TCP
+      name: global-catalog
+      port: 3268
+    - protocol: TCP
+      name: global-catalog-ssl
+      port: 3269
+  rpcPorts:
+    startPort: 49152
+    endPort: 49162
+
+persistence:
+  size: 5Gi
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

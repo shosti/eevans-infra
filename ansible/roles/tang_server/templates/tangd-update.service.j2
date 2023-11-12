@@ -1,0 +1,9 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Tang Server key update script
+Requires=opt.automount
+After=opt.automount
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/aarch64-linux-gnu/tangd-update {{ tang_server_db_dir }} {{ tang_server_cache_dir }}

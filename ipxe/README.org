@@ -1,0 +1,11 @@
+* iPXE
+This is a quick script to make a custom iPXE binary with an embedded script (to
+point to matchbox) and upload it to pfSense. To configure the tftp boot:
+
+- Go to https://pfsense.eevans.me/services_dhcp.php
+- "TFTP Server" should be the pfSense address (on the right interface)
+- "Next Server" should also be that (not 100% sure what the difference is)
+- "Default BIOS file name" should be undionly.kpxe
+
+Servers need to boot in BIOS mode, not UEFI (it's possible to configure iPXE for
+UEFI but doesn't seem to be worth the bother).

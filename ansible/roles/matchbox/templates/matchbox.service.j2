@@ -1,0 +1,26 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Matchbox Server
+Documentation=https://github.com/poseidon/matchbox
+
+[Service]
+User=matchbox
+Group=matchbox
+Environment="MATCHBOX_ADDRESS=0.0.0.0:8880"
+Environment="MATCHBOX_RPC_ADDRESS=0.0.0.0:8081"
+ExecStart=/usr/local/bin/matchbox \
+  -assets-path /opt/matchbox/assets \
+  -data-path /opt/matchbox \
+  -ca-file /opt/matchbox/pki/ca.crt \
+  -cert-file /opt/matchbox/pki/server.crt \
+  -key-file /opt/matchbox/pki/server.key \
+  -web-ssl \
+  -web-cert-file /opt/matchbox/letsencrypt/etc/live/matchbox.{{matchbox_default_domain }}/fullchain.pem \
+  -web-key-file /opt/matchbox/letsencrypt/etc/live/matchbox.{{matchbox_default_domain }}/privkey.pem
+
+# systemd.exec
+ProtectHome=yes
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

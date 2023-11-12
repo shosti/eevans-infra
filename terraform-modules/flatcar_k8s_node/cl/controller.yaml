@@ -1,0 +1,147 @@
+---
+systemd:
+  units:
+    - name: fscrypt-unlock.service
+      enabled: true
+      contents: |
+        [Unit]
+        Requires=docker.service
+        After=docker.service
+        Requires=install-binaries.service
+        After=install-binaries.service
+        [Service]
+        Type=oneshot
+        RemainAfterExit=true
+        ExecStart=/opt/bin/fscrypt-unlock
+        [Install]
+        WantedBy=multi-user.target
+
+storage:
+  files:
+    - path: /opt/kubernetes/manifests/kube-vip.yaml
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: kube-vip
+            namespace: kube-system
+          spec:
+            containers:
+            - args:
+              - manager
+              env:
+              - name: vip_arp
+                value: "true"
+              - name: vip_interface
+                value: "%NETWORK_INTERFACE%"
+              - name: port
+                value: "6443"
+              - name: vip_cidr
+                value: "32"
+              - name: cp_enable
+                value: "true"
+              - name: cp_namespace
+                value: kube-system
+              - name: vip_ddns
+                value: "false"
+              - name: vip_leaderelection
+                value: "true"
+              - name: vip_leaseduration
+                value: "5"
+              - name: vip_renewdeadline
+                value: "3"
+              - name: vip_retryperiod
+                value: "1"
+              - name: vip_address
+                value: ${k8s_api_vip}
+              image: plndr/kube-vip:v0.3.5
+              imagePullPolicy: Always
+              name: kube-vip
+              securityContext:
+                capabilities:
+                  add:
+                  - NET_ADMIN
+                  - NET_RAW
+                  - SYS_TIME
+              volumeMounts:
+              - mountPath: /etc/kubernetes/admin.conf
+                name: kubeconfig
+            hostNetwork: true
+            volumes:
+            - hostPath:
+                path: /etc/kubernetes/admin.conf
+              name: kubeconfig
+
+    - path: /opt/bin/fscrypt-unlock
+      filesystem: root
+      mode: 0755
+      contents:
+        inline: |
+          #!/usr/bin/env bash
+
+          set -euo pipefail
+
+          export PATH="/opt/bin:$PATH"
+
+          DIRS="${encrypted_directories}"
+
+          TMPDIR="$(mktemp -d)"
+          chmod 0700 "$TMPDIR"
+          MNTDIR="$(mktemp -d)"
+          mount -t ext4 -o ro,noload "${secrets_drive}" "$MNTDIR"
+          cleanup() {
+              rm -rf "$TMPDIR"
+              umount "$MNTDIR"
+              rm -rf "$MNTDIR"
+          }
+          trap cleanup EXIT
+
+          fscrypt-provision "$MNTDIR/fscrypt-key.jwe"
+
+          docker run --rm -i shosti/clevis:v1 decrypt <"$MNTDIR/fscrypt-key.jwe" > "$TMPDIR/fscrypt.key"
+          for dir in $DIRS; do
+            fscrypt unlock "$dir" --key="$TMPDIR/fscrypt.key"
+          done
+
+    - path: /opt/bin/fscrypt-provision
+      filesystem: root
+      mode: 0755
+      contents:
+        inline: |
+          #!/usr/bin/env bash
+
+          set -euo pipefail
+
+          export PATH="/opt/bin:$PATH"
+
+          DIRS="${encrypted_directories}"
+          KEYFILE="$1"
+
+          if [ -f /opt/FSCRYPT-PROVISIONED ]; then
+            echo "fscrypt already provisioned"
+            exit 0
+          fi
+
+          TMPDIR="$(mktemp -d)"
+          chmod 0700 "$TMPDIR"
+          cleanup() {
+              rm -rf "$TMPDIR"
+          }
+          trap cleanup EXIT
+
+          root_dev="$(df -T | grep /$ | awk '{print $1}')"
+          tune2fs -O encrypt "$root_dev"
+
+          fscrypt setup
+
+          docker run --rm -i shosti/clevis:v1 decrypt <"$KEYFILE" > "$TMPDIR/fscrypt.key"
+          for dir in $DIRS; do
+            mkdir -p "$dir"
+            chmod 0700 "$dir"
+            fscrypt encrypt "$dir" --source=raw_key --key="$TMPDIR/fscrypt.key" --skip-unlock --name="$dir"
+          done
+
+          touch /opt/FSCRYPT-PROVISIONED

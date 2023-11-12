@@ -1,0 +1,300 @@
+---
+passwd:
+  users:
+    - name: core
+      ssh_authorized_keys:
+        - "${ssh_authorized_key}"
+
+systemd:
+  units:
+    # Disable locksmith so we can use FLUO, see https://github.com/flatcar-linux/flatcar-linux-update-operator/
+    - name: locksmithd.service
+      mask: true
+    - name: update-engine.service
+      enabled: true
+
+    - name: install-binaries.service
+      enabled: true
+      contents: |
+        [Unit]
+        Wants=network-online.target
+        After=network-online.target
+        [Service]
+        Type=oneshot
+        ExecStart=/opt/bin/install-binaries
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: kubelet.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=kubelet: The Kubernetes Node Agent
+        Documentation=https://kubernetes.io/docs/home/
+        Wants=network-online.target
+        After=network-online.target
+        Requires=fscrypt-unlock.service
+        After=fscrypt-unlock.service
+
+        [Service]
+        Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf"
+        Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"
+        EnvironmentFile=-/var/lib/kubelet/kubeadm-flags.env
+        EnvironmentFile=-/etc/default/kubelet
+
+        ExecStart=/opt/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS
+        Restart=always
+        StartLimitInterval=0
+        RestartSec=10
+
+        [Install]
+        WantedBy=multi-user.target
+
+storage:
+  directories:
+    - path: /opt/local-path-provisioner
+      filesystem: root
+      mode: 0700
+    - path: /opt/etc/kubernetes
+      filesystem: root
+      mode: 0700
+
+  links:
+    - path: /etc/kubernetes
+      target: /opt/etc/kubernetes
+      hard: false
+
+  files:
+    - path: /etc/hostname
+      filesystem: root
+      mode: 420
+      contents:
+        inline: "${hostname}"
+
+    # Change systemd to only manage the primary nic (avoiding horrible DHCP
+    # unpleasantness every time a new link is added to the system)
+    - path: /etc/systemd/network/00-primary.network
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          [Match]
+          MACAddress=${mac}
+
+          [Network]
+          DHCP=yes
+          KeepConfiguration=dhcp-on-stop
+
+          [DHCP]
+          UseMTU=true
+          UseDomains=true
+
+    - path: /etc/systemd/network/99-default.network
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          [Match]
+          Name=*
+          Type=ether
+
+          [Link]
+          Unmanaged=yes
+
+    - path: /opt/bin/install-binaries
+      filesystem: root
+      mode: 0755
+      contents:
+        inline: |
+          #!/usr/bin/env bash
+
+          set -euo pipefail
+
+          mkdir -p /opt/bin
+
+          K8S_URL=https://dl.k8s.io/release/${k8s_version}/bin/linux/amd64
+
+          download_file() {
+              URL="$1"
+              SHA512="$2"
+
+              dir="$(mktemp -d)"
+              fname="$dir/$(basename "$URL")"
+              curl -L "$URL" > "$fname"
+              if ! [ "$(sha512sum "$fname" | awk '{print $1}')" = "$SHA512" ]; then
+                  echo "Invalid download: $URL"
+                  exit 1
+              fi
+              echo "$fname"
+          }
+
+          # See https://kubernetes.io/docs/tasks/administer-cluster/verify-signed-artifacts/
+          install_k8s_binary() {
+              BINARY="$1"
+
+              if ! [ -f "/opt/bin/$BINARY" ]; then
+                  dir="$(mktemp -d)"
+                  FILES=(
+                      "$BINARY"
+                      "$BINARY.sig"
+                      "$BINARY.cert"
+                  )
+
+                  for FILE in "$${FILES[@]}"; do
+                      curl -sSfL --retry 3 --retry-delay 3 "$K8S_URL/$FILE" -o "$dir/$FILE"
+                  done
+
+                  /opt/bin/cosign verify-blob "$dir/$BINARY" \
+                    --signature "$dir/$BINARY".sig \
+                    --certificate "$dir/$BINARY".cert \
+                    --certificate-identity krel-staging@k8s-releng-prod.iam.gserviceaccount.com \
+                    --certificate-oidc-issuer https://accounts.google.com
+
+                  cp "$dir/$BINARY" "/opt/bin/$BINARY"
+                  chmod +x "/opt/bin/$BINARY"
+              fi
+          }
+
+          install_kubelet() {
+              install_k8s_binary kubelet
+          }
+
+          install_kubectl() {
+              install_k8s_binary kubectl
+          }
+
+          install_kubeadm() {
+              install_k8s_binary kubeadm
+          }
+
+          install_cni() {
+              if ! [ -d /opt/cni/bin ]; then
+                  mkdir -p /opt/cni/bin
+                  cni="$(download_file https://github.com/containernetworking/plugins/releases/download/v1.3.0/cni-plugins-linux-amd64-v1.3.0.tgz 5d0324ca8a3c90c680b6e1fddb245a2255582fa15949ba1f3c6bb7323df9d3af754dae98d6e40ac9ccafb2999c932df2c4288d418949a4915d928eb23c090540)"
+                  tar xzvf "$cni" -C /opt/cni/bin
+              fi
+          }
+
+          install_fscrypt() {
+              if ! [ -f /opt/bin/fscrypt ]; then
+                  fscrypt="$(download_file https://storage.googleapis.com/files.eevans.co/fscrypt-0.3.4 a9ddd90cf072cea5956216cba0653e428f7c261a72208ed1ca0e5c1046ed54674b7b8a2c54ef10f3e5cd7f57007e62e3549968fdee7e92ae7d4e7e381e9b6b69)"
+                  chmod +x "$fscrypt"
+                  mv "$fscrypt" /opt/bin/fscrypt
+              fi
+          }
+
+          install_cosign() {
+              if ! [ -f /opt/bin/cosign ]; then
+                  cosign="$(download_file https://github.com/sigstore/cosign/releases/download/v2.2.0/cosign-linux-amd64 4fdc69704625b686eae18964a8e9ba621d6d87b419f2adc8c7af09cc661ded6a4a5998cbeac1c106e261331097877ea6c56c6d9fb8b959bcf9df928f047ddd50)"
+                  chmod +x "$cosign"
+                  mv "$cosign" /opt/bin/cosign
+              fi
+          }
+
+          install_nerdctl() {
+              if ! [ -f /opt/bin/nerdctl ]; then
+                  nerdctl="$(download_file https://github.com/containerd/nerdctl/releases/download/v1.6.0/nerdctl-1.6.0-linux-amd64.tar.gz 89dcba32badfd1481d88cd5f4179ff99348578af5004a7e96daa05101e99ba7448685596692ada3186f718ffd1166768ac6a22e041c5887e416e6dc7fda97f24)"
+                  tar xzvf "$nerdctl" -C /opt/bin
+              fi
+          }
+
+          install_cosign
+          install_kubelet
+          install_kubectl
+          install_kubeadm
+          install_cni
+          install_fscrypt
+          install_nerdctl
+
+    # See https://kubernetes.io/docs/setup/production-environment/container-runtimes/
+    - path: /etc/modules-load.d/containerd.conf
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          overlay
+          br_netfilter
+
+    - path: /etc/sysctl.d/99-kubernetes-cri.conf
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          net.bridge.bridge-nf-call-iptables  = 1
+          net.ipv4.ip_forward                 = 1
+          net.bridge.bridge-nf-call-ip6tables = 1
+
+    # Harden sshd, see
+    # https://kinvolk.io/docs/flatcar-container-linux/latest/setup/security/customizing-sshd/
+    - path: /etc/ssh/sshd_config
+      filesystem: root
+      mode: 0600
+      contents:
+        inline: |
+          # Use most defaults for sshd configuration.
+          UsePrivilegeSeparation sandbox
+          Subsystem sftp internal-sftp
+          UseDNS no
+
+          PermitRootLogin no
+          AllowUsers core
+          AuthenticationMethods publickey
+
+    # Customize containerd, see
+    # https://www.flatcar.org/docs/latest/container-runtimes/customizing-docker/#use-a-custom-containerd-configuration
+    - path: /etc/systemd/system/containerd.service.d/10-use-custom-config.conf
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          [Service]
+          ExecStart=
+          ExecStart=/usr/bin/containerd
+
+    - path: /etc/containerd/config.toml
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          version = 2
+
+          # persistent data location
+          root = "/var/lib/containerd"
+          # runtime state information
+          state = "/run/containerd"
+          # set containerd as a subreaper on linux when it is not running as PID 1
+          subreaper = true
+          # set containerd's OOM score
+          oom_score = -999
+          disabled_plugins = []
+
+          # grpc configuration
+          [grpc]
+          address = "/run/containerd/containerd.sock"
+          # socket uid
+          uid = 0
+          # socket gid
+          gid = 0
+
+          [plugins."containerd.runtime.v1.linux"]
+          # shim binary name/path
+          shim = "containerd-shim"
+          # runtime binary name/path
+          runtime = "runc"
+          # do not use a shim when starting containers, saves on memory but
+          # live restore is not supported
+          no_shim = false
+
+          [plugins."io.containerd.grpc.v1.cri"]
+          # CHANGED
+          # Turning this on seems to break cilium
+          enable_selinux = false
+
+          # See https://github.com/kubevirt/containerized-data-importer/blob/main/doc/block_cri_ownership_config.md
+          device_ownership_from_security_context = true
+
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          # setting runc.options unsets parent settings
+          runtime_type = "io.containerd.runc.v2"
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+          SystemdCgroup = true

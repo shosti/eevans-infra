@@ -1,0 +1,3 @@
+{% for interface in vyos_router_mdns_repeater_interfaces %}
+set service mdns repeater interface {{ interface }}
+{% endfor %}

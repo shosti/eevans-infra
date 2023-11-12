@@ -1,0 +1,26 @@
+# apiVersion: apps/v1
+# kind: DaemonSet
+# metadata:
+#   name: apcups-device-plugin
+#   namespace: apcups
+# spec:
+#   selector:
+#     matchLabels:
+#       app.kubernetes.io/name: apcups-device-plugin
+#   template:
+#     metadata:
+#       labels:
+#         app.kubernetes.io/name: apcups-device-plugin
+#     spec:
+#       containers:
+#         - name: apcups-device-plugin
+#           image: shosti/apcups-device-plugin:v1.0
+#           securityContext:
+#             privileged: true
+#           volumeMounts:
+#             - mountPath: /var/lib/kubelet/device-plugins
+#               name: socket-path
+#       volumes:
+#         - hostPath:
+#             path: /var/lib/kubelet/device-plugins
+#           name: socket-path

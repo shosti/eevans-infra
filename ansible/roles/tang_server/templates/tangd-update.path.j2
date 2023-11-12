@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+[Unit]
+DefaultDependencies=no
+Requires=opt.automount
+After=opt.automount
+
+[Path]
+PathChanged={{ tang_server_db_dir }}
+MakeDirectory=true
+DirectoryMode=0700

@@ -1,0 +1,8 @@
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: CDI
+metadata:
+  name: cdi
+spec:
+  config:
+    uploadProxyURLOverride: https://cdi-upload.eevans.me
+    scratchSpaceStorageClass: local-path

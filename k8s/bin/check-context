@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ctx="$(kubectl config current-context)"
+[ "$ctx" = lan ] || {
+    echo "WRONG CONTEXT: $ctx"
+    exit 1
+}

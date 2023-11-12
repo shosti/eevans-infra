@@ -1,0 +1,157 @@
+---
+vyos_router_hostname: vyos
+
+# defaults file for vyos_router
+vyos_router_default_dns_servers:
+  - 1.1.1.1
+  - 1.0.0.1
+
+vyos_router_ntp_servers: []
+
+vyos_router_ssh_listen_address: 10.10.10.10
+
+vyos_router_interfaces:
+  - name: WAN
+    vyos_if: eth0
+    ipv4_addr: dhcp
+    description: Internet
+
+vyos_router_wireguard_interfaces: []
+
+vyos_router_source_nat_rules: []
+  # - rule: 100
+  #   address: 10.51.32.0/19
+  #   outbound_if: eth0
+
+vyos_router_firewall_rulesets: []
+
+vyos_router_address_groups: []
+
+vyos_router_mdns_repeater_interfaces: []
+
+vyos_router_ruleset_rules:
+  web:
+    number: 20
+    protocol: tcp
+    port: '80,443'
+    name: "HTTP(S)"
+  ssh:
+    number: 30
+    protocol: tcp
+    port: 22
+    name: "SSH"
+  dns:
+    number: 40
+    protocol: tcp_udp
+    port: 53
+    name: "DNS"
+  ntp:
+    number: 50
+    protocol: udp
+    port: 123
+    name: "NTP"
+  tang:
+    number: 60
+    protocol: tcp
+    port: 8306
+    name: "Tang"
+  k8s:
+    number: 70
+    protocol: tcp
+    port: 6443
+    name: "K8s API"
+  mqtt:
+    number: 80
+    protocol: tcp
+    port: '1883,8883'
+    name: "MQTT"
+  wireguard:
+    number: 90
+    protocol: udp
+    port: 51820
+    name: WireGuard
+  unifi:
+    number: 100
+    protocol: tcp
+    port: '6789,8080'
+    name: Unifi discovery
+  unifi_stun:
+    number: 110
+    protocol: udp
+    port: 3478
+    name: Unifi STUN
+  kdc:
+    number: 130
+    protocol: tcp_udp
+    port: 88
+  mdns:
+    number: 140
+    protocol: udp
+    port: 5353
+  esphome:
+    number: 150
+    protocol: tcp
+    port: '3232,8266,6053'
+  tftp:
+    number: 160
+    protocol: udp
+    port: '67,68,69'
+  matchbox_rpc:
+    number: 170
+    protocol: tcp
+    port: 8081
+  matchbox:
+    number: 180
+    protocol: tcp
+    port: 8880
+  docker_registry:
+    number: 190
+    protocol: tcp
+    port: 4000
+  ipmi:
+    number: 200
+    protocol: tcp
+    port: 2068 # 2068 is actually java KVM, but oh well
+  ipmi_udp:
+    number: 210
+    protocol: udp
+    port: 623
+  bgp:
+    number: 220
+    protocol: tcp_udp
+    port: 179
+  snmp:
+    number: 230
+    protocol: udp
+    port: 161,162
+  postgres:
+    number: 240
+    protocol: tcp
+    port: 5432,26257 # included cockroachdb
+    name: Postgres
+  # See https://wiki.samba.org/index.php/Samba_AD_DC_Port_Usage
+  domain_controller:
+    number: 250
+    protocol: tcp
+    port: 53,88,135,139,389,445,464,636,3268,3269,49152-65535
+  domain_controller_udp:
+    number: 260
+    protocol: udp
+    port: 53,88,137,138,389,464
+  all:
+    number: 1000
+    protocol: all
+    name: "All"
+
+vyos_router_tftp_server: 10.10.10.10
+vyos_router_tftp_bios_filename: undionly.kpxe
+vyos_router_bgp_enabled: false
+vyos_router_bgp_config:
+  local_asn: 65000
+  router_id: 10.10.10.10
+  neighbors: []
+
+vyos_router_snmp_enabled: false
+vyos_router_snmp_listen_addr: 10.10.10.10
+vyos_router_snmp_community: public
+vyos_router_snmp_listen_network: 10.10.10.10/24

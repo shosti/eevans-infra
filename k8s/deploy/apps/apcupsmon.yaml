@@ -1,0 +1,66 @@
+# ---
+# apiVersion: apps/v1
+# kind: StatefulSet
+# metadata:
+#   labels:
+#     app.kubernetes.io/name: apcupsmon
+#   name: apcupsmon
+#   namespace: apcups
+# spec:
+#   selector:
+#     matchLabels:
+#       app.kubernetes.io/name: apcupsmon
+#   template:
+#     metadata:
+#       labels:
+#         app.kubernetes.io/name: apcupsmon
+#     spec:
+#       containers:
+#         - image: shosti/apcupsd:v1
+#           name: apcupsd
+#           securityContext:
+#             privileged: true
+#           resources:
+#             limits:
+#               eevans.me/apcups: 1
+#         - image: shosti/apcupsd_exporter:v1
+#           name: exporter
+#           ports:
+#             - name: metrics
+#               containerPort: 9162
+#               protocol: TCP
+#           readinessProbe:
+#             httpGet:
+#               port: metrics
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   labels:
+#     app.kubernetes.io/name: apcupsmon
+#   name: apcupsmon
+#   namespace: apcups
+# spec:
+#   type: ClusterIP
+#   selector:
+#     app.kubernetes.io/name: apcupsmon
+#   ports:
+#   - name: metrics
+#     port: 9162
+#     protocol: TCP
+#     targetPort: metrics
+# ---
+# apiVersion: monitoring.coreos.com/v1
+# kind: ServiceMonitor
+# metadata:
+#   name: apcupsmon
+#   namespace: apcups
+#   labels:
+#     app.kubernetes.io/name: apcupsmon
+# spec:
+#   endpoints:
+#     - port: metrics
+#       path: /metrics
+#   selector:
+#     matchLabels:
+#       app.kubernetes.io/name: apcupsmon

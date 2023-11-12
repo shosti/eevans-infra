@@ -1,0 +1,22 @@
+name: ""
+
+postgresService: postgres
+
+backups:
+  enabled: true
+  repositoryName: b2:not-a-real-repository
+  postgresql:
+    host: ""
+    database: ""
+    user: ""
+  envSecretName: pgbackup-env
+  postgresCredentials:
+    name: postgres-credentials
+    key: password
+  schedule: '0 3 * * *'
+  image:
+    repository: harbor.eevans.me/library/pgbackup
+    tag: v3
+
+nameOverride: ""
+fullnameOverride: ""

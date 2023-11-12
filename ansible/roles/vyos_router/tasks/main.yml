@@ -1,0 +1,70 @@
+---
+# tasks file for vyos_router
+- name: Set hostname
+  vyos.vyos.vyos_config:
+    lines:
+      - "set system host-name {{ vyos_router_hostname }}"
+
+- name: Set domain
+  vyos.vyos.vyos_config:
+    lines:
+      - "set system domain-name {{ default_domain }}"
+  when: default_domain is defined
+
+- name: Set up SSH
+  vyos.vyos.vyos_config:
+    lines:
+      - "set system login user vyos authentication public-keys default key '{{ default_ssh_key.split(' ')[1] }}'"
+      - "set system login user vyos authentication public-keys default type {{ default_ssh_key.split(' ')[0] }}"
+      - "set system login user vyos authentication public-keys deploy key '{{ deploy_ssh_key.split(' ')[1] }}'"
+      - "set system login user vyos authentication public-keys deploy type {{ deploy_ssh_key.split(' ')[0] }}"
+      - "set service ssh port 22"
+      - "set service ssh listen-address {{ vyos_router_ssh_listen_address }}"
+      - "set service ssh disable-password-authentication"
+
+- name: Set up interfaces
+  include: interfaces.yml
+
+- name: Set up DHCP
+  include: dhcp.yml
+
+- name: Set up WireGuard
+  include: wireguard.yml
+
+- name: Set up firewall
+  include: firewall.yml
+
+- name: Set up NAT
+  vyos.vyos.vyos_config:
+    lines:
+      - "set nat source rule {{ item.rule }} source address {{ item.address }}"
+      - "set nat source rule {{ item.rule }} outbound-interface {{ item.outbound_if }}"
+      - "set nat source rule {{ item.rule }} translation address masquerade"
+  loop: "{{ vyos_router_source_nat_rules }}"
+
+- name: Set up system DNS
+  vyos.vyos.vyos_config:
+    lines:
+      - "set system name-server {{ item }}"
+  loop: "{{ vyos_router_default_dns_servers }}"
+
+- name: Set up mDNS repeaters
+  vyos.vyos.vyos_config:
+    src: mdns_repeater.j2
+
+- name: Set up SNMP
+  vyos.vyos.vyos_config:
+    lines:
+      - "set service snmp community {{ vyos_router_snmp_community }} authorization ro"
+      - "set service snmp community {{ vyos_router_snmp_community }} network {{ vyos_router_snmp_network }}"
+      - "set service snmp listen-address {{ vyos_router_snmp_listen_addr }}"
+  when: vyos_router_snmp_enabled
+
+- name: Set up BGP
+  vyos.vyos.vyos_config:
+    src: bgp.j2
+  when: vyos_router_bgp_enabled
+
+- name: Save configuration
+  vyos.vyos.vyos_config:
+    save: true

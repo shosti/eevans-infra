@@ -1,0 +1,24 @@
+# Configure a default setup of Home Assistant (frontend, api, etc)
+default_config:
+
+group: !include groups.yaml
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+homeassistant:
+  media_dirs:
+    media: /media
+
+mqtt:
+  broker: mosquitto
+  port: 1883
+  username: hass
+  password: !secret mqtt_password
+
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 10.101.0.0/16
+
+prometheus:

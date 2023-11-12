@@ -1,0 +1,6 @@
+* Tests for K8s packages
+This directory is for tests for various K8s/helm packages. Each test should be
+an exectuable script (ideally named the same as a package). Scripts should:
+
+- Clean up after themselves (using ~trap~ or similar)
+- Print failure messages to stderr starting with ~FAIL~

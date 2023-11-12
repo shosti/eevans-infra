@@ -1,0 +1,81 @@
+- name: Create letsencrypt directories
+  file:
+    path: '{{ item }}'
+    state: directory
+  loop:
+    - /opt/letsencrypt
+    - /opt/letsencrypt/etc
+    - /opt/letsencrypt/var
+
+- name: Copy renewal script
+  template:
+    src: renew-cert.j2
+    dest: /usr/local/bin/renew-cert
+    mode: '0755'
+
+- name: Create letsencrypt secrets directory
+  file:
+    path: /opt/letsencrypt/secrets
+    state: directory
+    mode: '0700'
+    owner: root
+
+- name: Create cloudflare credential file
+  template:
+    src: cloudflare.ini.j2
+    dest: /opt/letsencrypt/secrets/cloudflare.ini
+    mode: '0600'
+    owner: root
+
+- name: Check if certificate exists
+  stat:
+    path: '/opt/letsencrypt/etc/live/pihole.{{ pihole_default_domain }}'
+  register: cert_dir
+  changed_when: false
+
+- name: Create certificate
+  throttle: 1
+  community.docker.docker_container:
+    name: certbot
+    cleanup: true
+    detach: false
+    image: certbot/dns-cloudflare:v2.6.0
+    volumes:
+      - '/opt/letsencrypt/etc:/etc/letsencrypt:rw'
+      - '/opt/letsencrypt/var:/var/letsencrypt:rw'
+      - '/opt/letsencrypt/secrets:/secrets:ro'
+    command:
+      - certonly
+      - -n
+      - --agree-tos
+      - --email
+      - '{{ pihole_letsencrypt_email }}'
+      - --dns-cloudflare
+      - --dns-cloudflare-credentials
+      - /secrets/cloudflare.ini
+      - -d
+      - 'pihole.{{ pihole_default_domain }}'
+  when: cert_dir.stat.isdir is not defined or cert_dir.stat.isdir == False
+
+- name: Concatenate key/cert for Lighttpd
+  shell: |
+    umask 077
+    cat /opt/letsencrypt/etc/live/pihole.{{ pihole_default_domain }}/privkey.pem \
+      /opt/letsencrypt/etc/live/pihole.{{ pihole_default_domain }}/cert.pem \
+      > /opt/pihole/letsencrypt/combined.pem
+  changed_when: false
+
+- name: Copy CA full chain for lighttpd
+  copy:
+    src: '/opt/letsencrypt/etc/live/pihole.{{ pihole_default_domain }}/fullchain.pem'
+    dest: '/opt/pihole/letsencrypt/fullchain.pem'
+    remote_src: true
+
+- name: Make renewal cron job
+  cron:
+    name: Renew letsencrypt certificate
+    hour: '5'
+    minute: '3'
+    weekday: '0'
+    job: |
+      /usr/local/bin/renew-cert

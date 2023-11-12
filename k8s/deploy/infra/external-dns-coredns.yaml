@@ -1,0 +1,51 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: coredns
+  namespace: external-dns
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: coredns
+      version: 1.24.1
+      sourceRef:
+        kind: HelmRepository
+        name: coredns
+        namespace: flux-system
+      interval: 1m
+  values:
+    replicaCount: 2
+    isClusterService: false
+    prometheus:
+      monitor:
+        enabled: true
+    serviceType: LoadBalancer
+    service:
+      loadBalancerIP: 172.16.16.53
+    servers:
+    - zones:
+      - zone: .
+      port: 53
+      plugins:
+      - name: errors
+      # Serves a /health endpoint on :8080, required for livenessProbe
+      - name: health
+        configBlock: |-
+          lameduck 5s
+      # Serves a /ready endpoint on :8181, required for readinessProbe
+      - name: ready
+      # Serves a /metrics endpoint on :9153, required for serviceMonitor
+      - name: prometheus
+        parameters: 0.0.0.0:9153
+      - name: etcd
+        parameters: eevans.me
+        configBlock: |-
+          stubzones
+          path /skydns
+          endpoint http://etcd-0.etcd:2379 http://etcd-1.etcd:2379 http://etcd-2.etcd:2379
+      - name: cache
+        parameters: 30
+      - name: reload
+      - name: loadbalance

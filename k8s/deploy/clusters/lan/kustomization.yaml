@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- self.yaml
+- secrets.yaml
+- system.yaml
+- config.yaml
+- storage.yaml
+- infra.yaml
+- kubevirt.yaml
+- vms.yaml
+- apps.yaml
+- update-operator.yaml

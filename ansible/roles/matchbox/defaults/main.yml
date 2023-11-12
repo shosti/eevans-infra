@@ -1,0 +1,10 @@
+---
+# defaults file for matchbox
+matchbox_version: v0.9.0
+matchbox_sha256sum: 614bd6b78b25802b5b2fdb8a46a7f6aba0fec89219e15bc7a694bdda976f80b1
+matchbox_default_domain: example.com
+matchbox_letsencrypt_email: dns@example.com
+matchbox_server_tls_key: ""
+
+matchbox_flatcar_channel: stable
+matchbox_flatcar_version: 3602.2.0

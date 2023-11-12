@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sambadc.fullname" . }}
+  labels:
+    {{- include "sambadc.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+
+  selector:
+    matchLabels:
+      {{- include "sambadc.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "sambadc.selectorLabels" . | nindent 8 }}
+    spec:
+      hostname: {{ .Values.config.primaryHostname }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "sambadc.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+{{- range .Values.service.ports }}
+            - protocol: {{ .protocol }}
+              containerPort: {{ .port }}
+{{- end }}
+          env:
+            - name: REALM
+              value: {{ .Values.config.realm }}
+            - name: DOMAIN
+              value: {{ .Values.config.domain }}
+            - name: PUBLIC_IP
+              value: {{ .Values.config.primaryDCIP }}
+            - name: DYNAMIC_PORT_RANGE
+              value: "{{ .Values.service.rpcPorts.startPort }}-{{ .Values.service.rpcPorts.endPort }}"
+            - name: SELF_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          envFrom:
+            - secretRef:
+                name: {{ .Values.envSecret }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/samba
+              readOnly: false
+          startupProbe:
+            failureThreshold: 60
+            tcpSocket:
+              port: 389
+          livenessProbe:
+            tcpSocket:
+              port: 389
+          readinessProbe:
+            tcpSocket:
+              port: 389
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "sambadc.fullname" . }}-data
+            readOnly: false

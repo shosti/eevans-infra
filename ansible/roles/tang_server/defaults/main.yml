@@ -1,0 +1,9 @@
+---
+# defaults file for tang_server
+tang_server_db_dir: /opt/tang/db
+tang_server_cache_dir: /opt/tang/cache
+tang_server_port: 8306
+tang_server_gpg_key_id: NOTAKEY
+tang_server_b2_key_id: 00000
+tang_server_b2_key: NOTAKEY
+tang_server_b2_bucket_name: test-bucket

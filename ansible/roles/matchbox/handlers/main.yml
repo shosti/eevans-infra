@@ -1,0 +1,8 @@
+---
+# handlers file for matchbox
+- name: Restart matchbox
+  systemd:
+    name: matchbox
+    daemon_reload: true
+    state: restarted
+  listen: restart matchbox

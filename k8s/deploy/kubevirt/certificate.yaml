@@ -1,0 +1,17 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cdi-uploadproxy-server-cert
+  namespace: cdi
+spec:
+  dnsNames:
+    - cdi-upload.eevans.me
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: letsencrypt-prod
+  secretName: cdi-uploadproxy-server-cert
+  usages:
+    - digital signature
+    - key encipherment

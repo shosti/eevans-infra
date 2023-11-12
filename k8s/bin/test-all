@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+#
+# This script runs tests on the cluster.
+
+set -euo pipefail
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+
+"$DIR/check-context"
+
+for t in "$DIR"/../test/*; do
+    if ! [ -x "$t" ]; then
+        continue
+    fi
+    echo "Testing $(basename -- "$t")"
+    "$t"
+done

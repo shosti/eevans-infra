@@ -1,0 +1,133 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "paperless.fullname" . }}
+  labels:
+    {{- include "paperless.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "paperless.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "paperless.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "paperless.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          volumeMounts:
+          {{- range $name, $val := .Values.volumes }}
+            - name: {{ $name }}
+              mountPath: /usr/src/paperless/{{ $name }}
+          {{- end }}
+          env:
+            # See https://docs.paperless-ngx.com/configuration/#polling
+            - name: PAPERLESS_CONSUMER_POLLING
+              value: {{ .Values.config.fsPollingInterval | quote }}
+            - name: PAPERLESS_PORT
+              value: {{ .Values.service.port | quote }}
+            {{- if .Values.ingress.enabled }}
+            - name: PAPERLESS_URL
+              value: https://{{ get (first .Values.ingress.hosts) "host" }}
+            {{- end }}
+            - name: PAPERLESS_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "paperless.fullname" . }}-secret-key
+                  key: secretKey
+            - name: PAPERLESS_ADMIN_USER
+              value: {{ .Values.config.admin.user }}
+            - name: PAPERLESS_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.admin.passwordSecret.name }}
+                  key: {{ .Values.config.admin.passwordSecret.key }}
+            - name: USERMAP_UID
+              value: {{ .Values.config.uid | quote }}
+            - name: USERMAP_GID
+              value: {{ .Values.config.gid | quote }}
+            - name: PAPERLESS_REDIS
+              value: {{ .Values.redis.url }}
+            - name: PAPERLESS_DBHOST
+              value: {{ .Values.postgres.host }}
+            - name: PAPERLESS_DBPORT
+              value: {{ .Values.postgres.port | quote }}
+            - name: PAPERLESS_DBNAME
+              value: {{ .Values.postgres.database }}
+            - name: PAPERLESS_DBUSER
+              value: {{ .Values.postgres.user }}
+            - name: PAPERLESS_DBPASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.passwordSecret.name }}
+                  key: {{ .Values.postgres.passwordSecret.key }}
+          startupProbe:
+            httpGet:
+              path: /
+              port: http
+              {{- if .Values.ingress.enabled }}
+              httpHeaders:
+                - name: Host
+                  value: {{ get (first .Values.ingress.hosts) "host" }}
+              {{- end }}
+            periodSeconds: 10
+            failureThreshold: 360
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+              {{- if .Values.ingress.enabled }}
+              httpHeaders:
+                - name: Host
+                  value: {{ get (first .Values.ingress.hosts) "host" }}
+              {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+              {{- if .Values.ingress.enabled }}
+              httpHeaders:
+                - name: Host
+                  value: {{ get (first .Values.ingress.hosts) "host" }}
+              {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        {{- range $name, $val := .Values.volumes }}
+        - name: {{ $name }}
+          {{- toYaml $val | nindent 10 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

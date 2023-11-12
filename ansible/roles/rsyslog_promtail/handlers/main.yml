@@ -1,0 +1,7 @@
+---
+# handlers file for rsyslog_promtail
+- name: Restart rsyslog
+  systemd:
+    name: rsyslog
+    state: restarted
+  listen: restart rsyslog

@@ -1,0 +1,61 @@
+---
+# Node policy for secondary NICs with VLANs
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetworkNodePolicy
+metadata:
+  name: intel-sriov
+  namespace: sriov-network-operator
+spec:
+  nodeSelector:
+    feature.node.kubernetes.io/network-sriov.capable: "true"
+  resourceName: sriovnic
+  mtu: 1500
+  numVfs: 4
+  priority: 90
+  nicSelector:
+    pfNames:
+      - enp3s0f1
+      - eno4
+      - enp5s0f1
+      - eno2
+  deviceType: vfio-pci
+---
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetwork
+metadata:
+  name: iot-net
+  namespace: sriov-network-operator
+spec:
+  ipam: |
+    {}
+  networkNamespace: default
+  resourceName: sriovnic
+  vlan: 48
+  spoofChk: "off"
+---
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetwork
+metadata:
+  name: user-net
+  namespace: sriov-network-operator
+spec:
+  ipam: |
+    {}
+  networkNamespace: default
+  resourceName: sriovnic
+  vlan: 36
+  spoofChk: "off"
+---
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetwork
+metadata:
+  name: dc-net
+  namespace: sriov-network-operator
+spec:
+  ipam: |
+    {}
+  networkNamespace: default
+  resourceName: sriovnic
+  vlan: 60
+  spoofChk: "off"
+---

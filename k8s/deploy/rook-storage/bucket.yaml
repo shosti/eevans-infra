@@ -1,0 +1,19 @@
+# This is for global buckets; other buckets may be created on a per-app basis.
+---
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: terraform-state
+  namespace: rook-ceph
+spec:
+  bucketName: terraform-state
+  storageClassName: rook-ceph-bucket
+---
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: vyos-images
+  namespace: rook-ceph
+spec:
+  bucketName: vyos-images
+  storageClassName: rook-ceph-bucket

@@ -1,0 +1,37 @@
+# ---
+# apiVersion: awx.ansible.com/v1beta1
+# kind: AWX
+# metadata:
+#   name: awx
+#   namespace: awx
+# spec:
+#   redis_image_version: 6.2.6
+#   ee_images:
+#     - name: awx-ee
+#       image: quay.io/ansible/awx-ee:0.6.0
+#   projects_persistence: true
+#   projects_storage_class: rook-cephfs
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: awx
+#   namespace: awx
+#   annotations:
+#     cert-manager.io/cluster-issuer: letsencrypt-prod
+# spec:
+#   tls:
+#    - hosts:
+#      - awx.eevans.me
+#      secretName: awx-tls
+#   rules:
+#   - host: awx.eevans.me
+#     http:
+#       paths:
+#       - path: /
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: awx-service
+#             port:
+#               name: http

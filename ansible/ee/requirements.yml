@@ -1,0 +1,24 @@
+roles:
+  - src: geerlingguy.swap
+    version: 1.0.2
+
+collections:
+  - name: ansible.posix
+    version: 1.3.0
+    source: https://galaxy.ansible.com
+
+  - name: community.general
+    version: 3.8.0
+    source: https://galaxy.ansible.com
+
+  - name: community.docker
+    version: 1.10.0
+    source: https://galaxy.ansible.com
+
+  - name: vyos.vyos
+    version: 2.6.0
+    source: https://galaxy.ansible.com
+
+  - name: awx.awx
+    version: 19.4.0
+    source: https://galaxy.ansible.com

@@ -1,0 +1,24 @@
+* Raspberry Pi Hacks
+This is a collection of pre-init hacks for Ubuntu Raspberry Pi. There are two
+main reasons to do this:
+
+1. Disable U-Boot
+
+Ubuntu uses U-Boot to boot by default (not 100% sure why, but I think it's to
+enable kernel rollbacks). U-Boot seems to be incapable of booting if a
+non-serial UART devices (like the GPS receiver) is hooked up, so we disable it
+according to [[https://wiki.ubuntu.com/ARM/RaspberryPi#Boot_sequence][these instructions]].
+
+2. Disable serial UART
+
+Again, this is so the GPS will work. Devices should be able to be hooked up over
+SSH so no real reason to use a serial console in most cases anyway.
+
+3. User-Data config
+
+This is just fun headless provisioning stuff (setting hostname + SSH keys).
+
+The original files are stored in the repo for reference.
+
+** Usage
+Use the ~prep-boot~ script with the boot partition and the target hostname.

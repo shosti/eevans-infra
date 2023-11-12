@@ -1,0 +1,18 @@
+[submodule "k8s/secrets"]
+	path = k8s/secrets
+	url = git@gitea.eevans.me:shosti/eevans-infra-secrets
+[submodule "ca"]
+	path = ca
+	url = git@gitea.eevans.me:shosti/eevans-infra-ca
+[submodule "private"]
+	path = private
+	url = git@gitea.eevans.me:shosti/eevans-infra-private
+[submodule "terraform"]
+	path = terraform
+	url = git@gitea.eevans.me:shosti/eevans-infra-terraform
+[submodule "backups"]
+	path = backups
+	url = git@gitea.eevans.me:shosti/eevans-infra-backups
+[submodule "ansible/group_vars"]
+	path = ansible/group_vars
+	url = git@gitea.eevans.me:shosti/eevans-infra-ansible

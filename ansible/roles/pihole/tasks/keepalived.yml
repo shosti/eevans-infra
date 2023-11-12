@@ -1,0 +1,38 @@
+- name: Allow non-local IP bind
+  sysctl:
+    name: net.ipv4.ip_nonlocal_bind
+    value: '1'
+
+- name: Install status script
+  copy:
+    src: check_pihole_status.sh
+    dest: /usr/local/bin/check_pihole_status.sh
+    mode: '0755'
+
+- name: Install keepalived
+  apt:
+    name: keepalived
+    state: present
+
+- name: Install keepalived configuration
+  template:
+    src: keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+    mode: '0600'
+  notify: restart keepalived
+
+- name: Enable keepalived
+  systemd:
+    name: keepalived
+    state: started
+    enabled: true
+
+- name: Allow vrrp traffic inbound
+  community.general.ufw:
+    rule: allow
+    from: 224.0.0.18
+
+- name: Allow vrrp traffic outbound
+  community.general.ufw:
+    rule: allow
+    to: 224.0.0.18

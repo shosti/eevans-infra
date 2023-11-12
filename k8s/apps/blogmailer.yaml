@@ -1,0 +1,57 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: blogmailer
+  namespace: listmonk
+  labels:
+    app.kubernetes.io/name: blogmailer
+spec:
+  schedule: 0,30 * * * *
+  jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: blogmailer
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: blogmailer
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: blogmailer
+              image: ko://gitea.eevans.me/shosti/eevans-infra/cmd/blogmailer
+              envFrom:
+                - secretRef:
+                    name: blogmailer-state
+                - configMapRef:
+                    name: blogmailer-state
+              env:
+                - name: LISTMONK_URL
+                  value: "http://listmonk:9000"
+                - name: LISTMONK_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: listmonk-secrets
+                      key: LISTMONK_app__admin_username
+                - name: LISTMONK_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: listmonk-secrets
+                      key: LISTMONK_app__admin_password
+                - name: FEED_URL
+                  value: https://eevans.co/index.xml
+                # Annoyingly this isn't set properly by rook
+                - name: BUCKET_REGION
+                  value: us-east-1
+                - name: CATEGORY_LISTS
+                  value: technical=2,book reviews=3
+              securityContext:
+                runAsNonRoot: true
+                capabilities:
+                  drop:
+                    - ALL
+                allowPrivilegeEscalation: false
+                seccompProfile:
+                  type: RuntimeDefault

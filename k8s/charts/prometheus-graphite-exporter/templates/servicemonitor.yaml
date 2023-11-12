@@ -1,0 +1,15 @@
+{{- if .Values.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "prometheus-graphite-exporter.fullname" . }}
+  labels:
+    {{- include "prometheus-graphite-exporter.labels" . | nindent 4 }}
+spec:
+  endpoints:
+  - port: metrics
+    honorLabels: true
+  selector:
+    matchLabels:
+      {{- include "prometheus-graphite-exporter.selectorLabels" . | nindent 6 }}
+{{- end }}

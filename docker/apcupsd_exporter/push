@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+VERSION=v1
+
+docker buildx build . --progress=plain -t "shosti/apcupsd_exporter:v1" --platform=linux/amd64 --push

@@ -1,0 +1,101 @@
+# Common setup for Pi OS hosts
+---
+- hosts: rpi
+  become: yes
+  vars_files:
+    - secrets.yml
+
+  tasks:
+    - name: Disable Bluetooth
+      lineinfile:
+        dest: /boot/firmware/usercfg.txt
+        regexp: 'dtoverlay=disable-bt'
+        line: 'dtoverlay=disable-bt'
+
+    - name: Disable Wi-Fi
+      lineinfile:
+        dest: /boot/firmware/usercfg.txt
+        regexp: 'dtoverlay=disable-wifi'
+        line: 'dtoverlay=disable-wifi'
+
+    - name: Disable wpa_supplicant
+      systemd:
+        name: wpa_supplicant
+        state: stopped
+        enabled: false
+
+    - name: Uninstall lxd agent
+      apt:
+        name: lxd-agent-loader
+        state: absent
+
+    - name: Install useful packages
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - clevis
+        - clevis-luks
+        - lm-sensors
+        - wiringpi
+
+    - name: Check if data volume has been bound to clevis
+      stat:
+        path: /data-volume-bound
+      register: data_volume_bound
+      changed_when: false
+
+    - name: Bind data volume to clevis
+      shell: |
+        echo "$LUKS_KEY" | clevis luks bind -d /dev/disk/by-uuid/{{ rpi_data_volume_uuid }} tang \
+            '{"url":"{{ rpi_data_volume_tang_server.url }}","thp":"{{ rpi_data_volume_tang_server.thp }}"}' \
+            -k - \
+            && touch /data-volume-bound
+      environment:
+        LUKS_KEY: "{{ rpi_data_volume_keys[rpi_data_volume_uuid] }}"
+      when: rpi_data_volume_tang_server is defined and not data_volume_bound.stat.exists
+
+    - name: Make systemd service to unlock encrypted volume
+      template:
+        src: unlock-data-volume.service.j2
+        dest: /etc/systemd/system/unlock-data-volume.service
+      when: rpi_data_volume_tang_server is defined
+
+    - name: Make mount unit file for data volume
+      template:
+        src: opt.mount.j2
+        dest: /etc/systemd/system/opt.mount
+      notify: daemon reload
+
+    - name: Create opt automount
+      template:
+        src: opt.automount.j2
+        dest: /etc/systemd/system/opt.automount
+      notify: daemon reload
+
+    - name: Auto-unlock encrypted volume
+      systemd:
+        name: unlock-data-volume.service
+        state: started
+        enabled: true
+        daemon_reload: true
+      when: rpi_data_volume_tang_server is defined
+
+    - name: Enable opt automount
+      systemd:
+        name: opt.automount
+        state: started
+        enabled: true
+        daemon_reload: true
+
+    - name: Write mounting script for data volume
+      template:
+        src: mount-data-volume.j2
+        dest: /usr/local/bin/mount-data-volume
+        mode: '0755'
+
+  handlers:
+    - name: Reload systemd daemons
+      systemd:
+        daemon_reload: true
+      listen: daemon reload

@@ -1,0 +1,17 @@
+* SRIOV Operator
+** Installation
+This one is a bit of a doozy. How I got these manifests:
+
+- Cloned https://github.com/k8snetworkplumbingwg/sriov-network-operator
+- Hacked up hack/deploy-setup.sh to output to a yaml instead of directly applying 😨
+- Ran ~make deploy-setup-k8s~
+- Manual cleanup (in particular, have to get rid of "updateStrategy" crap in the
+  deployment)
+
+The Helm chart in the repo was hopelessly broken; hopefully they'll fix it at
+some point.
+
+To get the custom NIC IDs, you have to do some digging:
+
+- Find the "normal" ID/vendor using ~lspci -nn~
+- Find the VF device ID from ~/sys/bus/pci/devices/<addr>/sriov_vf_device~

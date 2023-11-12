@@ -1,0 +1,93 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: unifi
+  namespace: unifi
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: unifi
+      version: 2.0.4
+      sourceRef:
+        kind: HelmRepository
+        name: k8s-at-home
+        namespace: flux-system
+      interval: 1m
+  values:
+    # THE CHART IS BUGGY AND THIS HAS TO BE SET!
+    image:
+      tag: v7.5.176
+
+    ingress:
+      enabled: true
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+        nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+        nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+      hosts:
+        - unifi.eevans.me
+      tls:
+        - secretName: unifi-tls
+          hosts:
+            - unifi.eevans.me
+
+    controllerService:
+      type: LoadBalancer
+      annotations:
+        metallb.universe.tf/allow-shared-ip: ingress
+      loadBalancerIP: 172.16.16.100
+
+    stunService:
+      type: LoadBalancer
+      annotations:
+        metallb.universe.tf/allow-shared-ip: ingress
+      loadBalancerIP: 172.16.16.100
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 1Gi
+      limits:
+        memory: 1Gi
+
+    persistence:
+      enabled: true
+---
+# NetPol to block egress (preventing unifi from phoning home)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: unifi-egress
+  namespace: unifi
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+          rules:
+            dns:
+              - matchPattern: "*"
+    - toCIDRSet:
+        - cidr: 0.0.0.0/0
+      toPorts:
+        - ports:
+            - port: "465"
+              protocol: TCP
+    - toFQDNs:
+        - matchName: fw-download.ubnt.com
+      toPorts:
+        - ports:
+            - port: "443"
+    - toFQDNs:
+        - matchName: fw-update.ubnt.com
+      toPorts:
+        - ports:
+            - port: "443"

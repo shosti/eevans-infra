@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+kustomize build "$1" | kubectl apply --dry-run=server -f -

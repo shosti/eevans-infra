@@ -1,0 +1,114 @@
+---
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: eevansco
+  namespace: eevansco-static
+spec:
+  bucketName: eevansco
+  storageClassName: rook-ceph-s3-public
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: prep-eevansco-bucket
+  namespace: eevansco-static
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: aws
+          image: public.ecr.aws/aws-cli/aws-cli:2.13.29
+          command:
+            - bash
+            - -c
+            - |
+              set -xeuo pipefail
+
+              export AWS_ENDPOINT_URL="http://$BUCKET_HOST"
+              export AWS_REGION=us-east-1
+              aws s3api put-bucket-website --bucket "$BUCKET_NAME" --website-configuration file:///config/website.json
+              aws s3api put-bucket-policy --bucket "$BUCKET_NAME" --policy file:///config/policy.json
+          envFrom:
+            - secretRef:
+                name: eevansco
+            - configMapRef:
+                name: eevansco
+          volumeMounts:
+            - name: config
+              mountPath: /config
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1234
+            runAsGroup: 1234
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+      volumes:
+        - name: config
+          configMap:
+            name: s3-public-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: s3-public-config
+  namespace: eevansco-static
+data:
+  policy.json: |
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "PublicReadGetObject",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": [
+            "s3:GetObject",
+            "s3:ListBucket"
+          ],
+          "Resource": [
+            "arn:aws:s3:::eevansco/*",
+            "arn:aws:s3:::eevansco"
+          ]
+        }
+      ]
+    }
+  website.json: |
+    {
+      "IndexDocument": {
+        "Suffix": "index.html"
+      },
+      "ErrorDocument": {
+        "Key": "404.html"
+      }
+    }
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: eevansco
+  namespace: rook-ceph
+spec:
+  parentRefs:
+  - name: ingress-public
+    namespace: ingress-public
+  hostnames:
+    - eevans.co
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    filters:
+      - type: URLRewrite
+        urlRewrite:
+          hostname: eevansco.s3.eevans.co
+    backendRefs:
+    - name: rook-ceph-rgw-s3-public
+      port: 80

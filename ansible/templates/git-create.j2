@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# {{ ansible_managed }}
+
+set -euo pipefail
+
+if [[ $# -ne 1 ]]; then
+    echo 'Usage: create <project.git>'
+    exit 1
+fi
+
+project="$(echo "$1" | sed 's/\.git$\|$/.git/i')"
+project_dir="{{ git_home_dir }}/$project"
+
+if [[ -e $project_dir ]]; then
+    echo "$project already exists"
+    exit 1
+fi
+
+mkdir -p "$project_dir" && cd "$project_dir" && git init --bare

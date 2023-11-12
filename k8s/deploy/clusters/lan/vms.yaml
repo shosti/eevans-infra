@@ -1,0 +1,17 @@
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: vms
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: kubevirt-operator
+      namespace: kubevirt
+  interval: 10m0s
+  path: ./k8s/deploy/vms
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    namespace: flux-system
+    name: eevans-infra

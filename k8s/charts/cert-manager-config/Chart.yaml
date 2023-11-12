@@ -1,0 +1,6 @@
+apiVersion: v2
+name: config
+description: A Helm chart for cert-manager configuration
+type: application
+version: v1
+appVersion: v1

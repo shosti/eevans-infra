@@ -1,0 +1,191 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: gitea-db
+  namespace: gitea
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: postgresql
+      version: 9.4.1
+      sourceRef:
+        kind: HelmRepository
+        name: bitnami
+        namespace: flux-system
+      interval: 1m
+  values:
+    postgresqlUsername: gitea
+    postgresqlDatabase: gitea
+    existingSecret: gitea-postgres
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+        namespace: monitoring
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: postgres-config-gitea
+  namespace: gitea
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: ./k8s/charts/postgres-config
+      sourceRef:
+        kind: GitRepository
+        name: eevans-infra
+        namespace: flux-system
+      interval: 1m
+  values:
+    postgresService: gitea-db-postgresql-headless
+
+    backups:
+      enabled: true
+      repositoryName: b2:eevans-lan-db-backups:gitea
+      postgresql:
+        host: gitea-db-postgresql-0
+        database: gitea
+        user: gitea
+      postgresCredentials:
+        name: gitea-postgres
+        key: postgresql-password
+      healthCheckURL: https://hc-ping.com/5ec5e1a4-7ce6-49df-bf77-9234e6e69a8c
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gitea-data
+  labels:
+    app.kubernetes.io/name: gitea
+  namespace: gitea
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: rook-cephfs
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: gitea
+  namespace: gitea
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: gitea
+      version: 9.5.1
+      sourceRef:
+        kind: HelmRepository
+        name: gitea
+        namespace: flux-system
+      interval: 1m
+  values:
+    image:
+      rootless: true
+    containerSecurityContext:
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      runAsNonRoot: true
+    gitea:
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+      config:
+        server:
+          ROOT_URL: https://gitea.eevans.me/
+          WEBHOOK_DELIVER_TIMEOUT: '20'
+        log:
+          COLORIZE: "false"
+        webhook:
+          ALLOWED_HOST_LIST: private
+        actions:
+          ENABLED: "true"
+    postgresql:
+      enabled: false
+    postgresql-ha:
+      enabled: false
+    deployment:
+      env:
+        - name: USER_UID
+          value: "1000"
+        - name: USER_GID
+          value: "1000"
+    service:
+      ssh:
+        type: LoadBalancer
+        clusterIP: "-"
+        annotations:
+          metallb.universe.tf/allow-shared-ip: ingress
+        loadBalancerIP: 172.16.16.100
+    ingress:
+      enabled: true
+      className: nginx
+      hosts:
+      - host: gitea.eevans.me
+        paths:
+          - path: /
+            pathType: Prefix
+      tls:
+      -   hosts:
+          - gitea.eevans.me
+          secretName: gitea-tls
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+        # See https://github.com/kubernetes/ingress-nginx/issues/3715#issuecomment-471524919
+        nginx.ingress.kubernetes.io/proxy-body-size: "0"
+        nginx.ingress.kubernetes.io/proxy-buffering: "off"
+        nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+        nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+        nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    persistence:
+      enabled: true
+      create: false
+      claimName: gitea-data
+    resources:
+      limits:
+          cpu: 750m
+          memory: 1Gi
+  valuesFrom:
+    - kind: Secret
+      name: gitea-values
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: gitea-backup
+  namespace: gitea
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: ./k8s/charts/restic-backup
+      sourceRef:
+        kind: GitRepository
+        name: eevans-infra
+        namespace: flux-system
+      interval: 1m
+  values:
+    repositoryName: b2:eevans-lan-gitea-backup
+    secretName: gitea-backup
+    healthCheckURL: https://hc-ping.com/4099aa0b-99aa-46b0-9c8e-3e6057df1653
+    data:
+      claimName: gitea-data
+    cache:
+      storageClass: rook-ceph-block

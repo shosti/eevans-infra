@@ -1,0 +1,11 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Tang Server key generation script
+ConditionDirectoryNotEmpty=|!{{ tang_server_db_dir }}
+Requires=tangd-update.path
+Requires=opt.automount
+After=opt.automount
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/aarch64-linux-gnu/tangd-keygen {{ tang_server_db_dir }}

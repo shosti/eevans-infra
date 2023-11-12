@@ -1,0 +1,45 @@
+---
+apiVersion: ceph.rook.io/v1
+kind: CephObjectStore
+metadata:
+  name: object-store
+  namespace: rook-ceph
+spec:
+  metadataPool:
+    failureDomain: host
+    replicated:
+      size: 3
+  dataPool:
+    failureDomain: host
+    replicated:
+      size: 3
+  preservePoolsOnDelete: true
+  gateway:
+    sslCertificateRef:
+    port: 80
+    instances: 2
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: object-gateway
+  namespace: rook-ceph
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: cilium
+  rules:
+    - host: s3.eevans.me
+      http:
+        paths:
+          - backend:
+              service:
+                name: rook-ceph-rgw-object-store
+                port:
+                  name: http
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - s3.eevans.me
+      secretName: object-gateway-ingress-tls

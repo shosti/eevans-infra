@@ -1,0 +1,53 @@
+name: Deploy blogmailer image
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: http://gitea-http:3000/actions/setup-go@v4
+        with:
+          go-version: 1.21.3
+      - uses: http://gitea-http:3000/actions/checkout@v4
+      - name: Test
+        run: go test -race -v ./...
+  deploy-apps:
+    runs-on: ubuntu-22.04
+    needs: test
+    if: ${{ gitea.ref == 'refs/heads/master' }}
+    env:
+      KO_DOCKER_REPO: gitea.eevans.me/shosti
+    steps:
+      - uses: http://gitea-http:3000/actions/setup-go@v4
+        with:
+          go-version: 1.21.3
+      - uses: http://gitea-http:3000/actions/setup-ko@v0.6
+        with:
+          version: v0.15.0
+          go-version: 1.21.3
+      - uses: http://gitea-http:3000/actions/flux2/action@main
+        with:
+          version: 2.1.2
+      - uses: http://gitea-http:3000/actions/checkout@v4
+      - name: Log into docker
+        run: echo "$DOCKER_LOGIN" | ko login gitea.eevans.me --username shosti --password-stdin
+        env:
+          DOCKER_LOGIN: ${{ secrets.DOCKER_LOGIN }}
+      - name: Generate app manifests
+        run: |
+          set -eu
+
+          mkdir app-config
+          ko resolve -f k8s/apps/ > app-config/apps.yaml
+          cat <<EOS > app-config/kustomization.yaml
+          apiVersion: kustomize.config.k8s.io/v1beta1
+          kind: Kustomization
+          resources:
+            - apps.yaml
+          EOS
+      - run: |
+          flux push artifact \
+            oci://gitea.eevans.me/shosti/eevans-infra/app-config:latest \
+            --source="$(git config --get remote.origin.url)" \
+            --path=./app-config \
+            --revision="${{gitea.ref_name}}@sha1:${{gitea.sha}}" \
+            --creds="shosti:${{secrets.DOCKER_LOGIN}}"

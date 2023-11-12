@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+usage() {
+    echo "Usage: $0 <dev> <name> <mountpoint>"
+    exit 1
+}
+
+[ "$#" -eq 3 ] || usage
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+# shellcheck source=config
+. "$DIR/config"
+
+DEV="$1"
+NAME="$2"
+MNTPOINT="$3"
+TMPDIR="$(mktemp -d)"
+chmod 0700 "$TMPDIR"
+mkdir -p "$TMPDIR/mnt"
+sudo mount "${DEV}1" "$TMPDIR/mnt"
+cleanup() {
+    sudo umount "$TMPDIR/mnt"
+    rm -rf "$TMPDIR"
+}
+trap cleanup EXIT
+
+docker run --rm -i shosti/clevis:v1 decrypt <"$TMPDIR/mnt/key.jwe" > "$TMPDIR/keyfile"
+
+sudo cryptsetup luksOpen "${DEV}2" "$NAME" --key-file="$TMPDIR/keyfile"
+sudo mount "/dev/mapper/$NAME" "$MNTPOINT"

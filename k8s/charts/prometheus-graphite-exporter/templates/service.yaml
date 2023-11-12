@@ -1,0 +1,22 @@
+{{- range $svcName, $svc := .Values.services }}
+{{- with $ }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "prometheus-graphite-exporter.fullname" . }}-{{ $svcName }}
+  labels:
+    {{- include "prometheus-graphite-exporter.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml $svc.annotations | nindent 4 }}
+spec:
+  type: {{ $svc.type }}
+  ports:
+    - port: {{ $svc.port }}
+      targetPort: {{ $svcName }}
+      protocol: {{ $svc.protocol }}
+      name: {{ $svcName }}
+  selector:
+    {{- include "prometheus-graphite-exporter.selectorLabels" . | nindent 4 }}
+{{- end }}
+{{- end }}

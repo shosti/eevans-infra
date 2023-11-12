@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+usage() {
+    echo "Usage: $0 <dev>"
+    exit 1
+}
+
+[ "$#" -eq 1 ] || usage
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+# shellcheck source=config
+. "$DIR/config"
+DEV="$1"
+TMPDIR="$(mktemp -d)"
+cleanup() {
+    rm -rf "$TMPDIR"
+}
+trap cleanup EXIT
+
+echo "THIS WILL NUKE $DEV! ARE YOU SURE?"
+read -r prompt
+case "$prompt" in
+    y*)
+        ;;
+    *)
+        echo "Aborting..."
+        exit 1
+        ;;
+esac
+
+printf 'g\nn\n1\n2048\n\nw\n' | sudo fdisk "$DEV"
+
+sudo sync
+sudo mkfs.ext4 "${DEV}1"
+
+chmod 0700 "$TMPDIR"
+head --bytes=32 /dev/urandom > "$TMPDIR/keyfile"
+chmod 0700 "$TMPDIR/keyfile"
+
+mkdir -p "$TMPDIR/mnt"
+sudo mount "${DEV}1" "$TMPDIR/mnt"
+sudo chmod 0700 "$TMPDIR/mnt"
+docker run --rm -i shosti/clevis:v1 encrypt sss "$CLEVIS_CONF" \
+       <"$TMPDIR/keyfile" | sudo tee "$TMPDIR/mnt/fscrypt-key.jwe" > /dev/null
+sudo umount "$TMPDIR/mnt"

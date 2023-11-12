@@ -1,0 +1,62 @@
+{{- if .Values.backups.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "postgres-config.fullname" . }}-backup
+  labels:
+    {{- include "postgres-config.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.backups.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "postgres-config.labels" . | nindent 12 }}
+        spec:
+          serviceAccountName: {{ include "postgres-config.serviceAccountName" . }}
+          containers:
+          - name: pgbackup
+            image: "{{ .Values.backups.image.repository }}:{{ .Values.backups.image.tag }}"
+            env:
+              - name: BACKUP_NAME
+                value: {{ include "postgres-config.name" . }}
+              - name: PGHOST
+                value: {{ .Values.backups.postgresql.host }}.{{ .Values.postgresService }}
+              - name: PGDATABASE
+                value: {{ .Values.backups.postgresql.database }}
+              - name: PGUSER
+                value: {{ .Values.backups.postgresql.user }}
+              - name: HEALTH_CHECK_URL
+                value: {{ .Values.backups.healthCheckURL }}
+              - name: PGPASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: {{ .Values.backups.postgresCredentials.name }}
+                    key: {{ .Values.backups.postgresCredentials.key }}
+              - name: RESTIC_REPOSITORY
+                value: {{ .Values.backups.repositoryName }}
+            envFrom:
+              - secretRef:
+                  name: {{ .Values.backups.envSecretName }}
+            volumeMounts:
+              - name: dump
+                mountPath: /dump
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 5432
+              capabilities:
+                drop:
+                  - ALL
+              allowPrivilegeEscalation: false
+              seccompProfile:
+                type: RuntimeDefault
+          volumes:
+            - name: dump
+              emptyDir: {}
+          restartPolicy: OnFailure
+          {{- if .Values.backups.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml .Values.backups.imagePullSecrets | nindent 12 }}
+          {{- end }}
+{{- end }}

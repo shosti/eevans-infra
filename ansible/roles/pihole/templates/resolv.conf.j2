@@ -1,0 +1,6 @@
+# {{ ansible_managed }}
+domain {{ pihole_default_domain }}
+nameserver {{ pihole_vip }}
+{% for server in pihole_backup_dns_servers %}
+nameserver {{ server }}
+{% endfor %}

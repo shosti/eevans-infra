@@ -1,0 +1,13 @@
+- name: Check if WireGuard keypair exists
+  vyos.vyos.vyos_command:
+    commands: show interfaces wireguard wg0 public-key
+  register: keypair_check
+
+- name: Generate keypair
+  vyos.vyos.vyos_command:
+    commands: generate wireguard default-keypair
+  when: '"not found" in keypair_check.stdout[0]'
+
+- name: Configure WireGuard interfaces
+  vyos.vyos.vyos_config:
+    src: wireguard.j2

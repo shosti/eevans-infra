@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+{{ pihole_vip }} pihole.{{ pihole_default_domain }}
+{% for domain in pihole_custom_domains %}
+{{ domain.addr }} {{ domain.name }}
+{% endfor %}
+{% if static_hosts is defined %}
+{% for host in static_hosts %}
+{{ host.ipv4_addr | ansible.netcommon.ipv4('address') }} {{ host.name }}.{{pihole_default_domain }}
+{% endfor %}
+{% endif %}

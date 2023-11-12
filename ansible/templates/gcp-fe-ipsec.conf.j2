@@ -1,0 +1,16 @@
+# {{ ansible_managed }}
+config setup
+
+conn eevans-lan
+    fragmentation=yes
+    dpdaction=restart
+    ike=aes192gcm16-aes128gcm16-prfsha256-ecp256-ecp521,aes192-sha256-modp3072
+    esp=aes192gcm16-aes128gcm16-ecp256-modp3072,aes192-sha256-ecp256-modp3072
+    keyingtries=%forever
+    leftcert={{ gcp_vpn_fe_cert }}
+    leftid={{ gcp_vpn_fe_id }}
+    keyexchange=ikev2
+    leftsubnet={{ gcp_vpn_fe_subnet }}
+    rightsubnet={{ gcp_vpn_lan_subnet }}
+    right={{ gcp_vpn_lan_address }}
+    auto=start

@@ -1,0 +1,21 @@
+---
+apiVersion: ceph.rook.io/v1
+kind: CephBlockPool
+metadata:
+  name: replicapool
+  namespace: rook-ceph
+spec:
+  failureDomain: host
+  replicated:
+    size: 3
+    requireSafeReplicaSize: true
+  parameters:
+    compression_mode: passive
+    compression_algorithm: snappy
+  mirroring:
+    enabled: false
+    mode: image
+  statusCheck:
+    mirror:
+      disabled: false
+      interval: 60s

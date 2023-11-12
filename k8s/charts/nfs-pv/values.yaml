@@ -1,0 +1,4 @@
+volume:
+  capacity: 5Gi
+  server: example.local
+  path: /foo

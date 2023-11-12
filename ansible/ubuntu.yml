@@ -1,0 +1,209 @@
+# Common setup for all Ubuntu hosts
+---
+- hosts: ubuntu
+  become: yes
+  vars_files:
+    - secrets.yml
+
+  roles:
+    - rsyslog_promtail
+    - geerlingguy.swap
+
+  pre_tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+  handlers:
+    - name: Restart sshd
+      systemd:
+        name: ssh
+        state: restarted
+        enabled: true
+      listen: restart ssh
+
+    - name: Update CA certs
+      command: update-ca-certificates
+      listen: update ca certs
+
+    - name: Restart AppArmor
+      systemd:
+        name: apparmor
+        state: restarted
+        daemon_reload: true
+      listen: restart apparmor
+
+    - name: Restart unattended upgrades
+      systemd:
+        name: unattended-upgrades
+        state: restarted
+      listen: restart unattended upgrades
+
+  tasks:
+    # Silence annoying warnings
+    - name: Install aptitude
+      apt:
+        state: present
+        name:
+          - aptitude
+
+    - name: Install python-apt
+      apt:
+        state: present
+        name:
+          - python-apt
+      when: ansible_distribution_version == "20.04"
+
+    - name: Install python3-apt
+      apt:
+        state: present
+        name:
+          - python3-apt
+      when: ansible_distribution_version != "20.04"
+
+    - name: Install qemu-guest-agent
+      apt:
+        state: present
+        name:
+          - qemu-guest-agent
+      when: ubuntu_is_vm
+
+    - name: Enable qemu-guest-agent
+      systemd:
+        name: qemu-guest-agent
+        state: started
+        enabled: true
+      when: ubuntu_is_vm
+
+    - name: Install basic utilities
+      apt:
+        state: present
+        name:
+          - htop
+          - iotop
+          - nethogs
+          - nfs-common
+          - vim
+          - tmux
+          - tree
+
+    - name: Add default SSH authorization
+      authorized_key:
+        user: "{{ ansible_user }}"
+        state: present
+        key: "{{ default_ssh_key }}"
+      notify: restart ssh
+
+    - name: Add deploy SSH authorization
+      authorized_key:
+        user: "{{ ansible_user }}"
+        state: present
+        key: "{{ deploy_ssh_key }}"
+      notify: restart ssh
+
+    - name: Disable annoying spammy motd
+      lineinfile:
+        dest: /etc/default/motd-news
+        regexp: '^ENABLED'
+        line: ENABLED=0
+
+    - name: Set timezone to UTC
+      timezone:
+        name: 'Etc/UTC'
+
+    - name: Disable root SSH login
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^PermitRootLogin'
+        line: PermitRootLogin no
+      notify: restart ssh
+
+    - name: Disable SSH password login
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^PasswordAuthentication'
+        line: PasswordAuthentication no
+      notify: restart ssh
+
+    - name: Enable SSH firewall access
+      community.general.ufw:
+        rule: allow
+        protocol: tcp
+        port: 22
+
+    - name: Enable ufw
+      community.general.ufw:
+        state: enabled
+        policy: deny
+
+
+    # snap is an abomination
+    - name: Uninstall snap
+      apt:
+        name: snapd
+        state: absent
+
+    - name: Disable gross leftover snap services
+      systemd:
+        name: "{{ item }}"
+        state: stopped
+        enabled: false
+      loop:
+        - snap.lxd.activate.service
+        - snap.lxd.daemon.unix.socket
+
+    - name: Disable problematic snap apparmor profile
+      file:
+        src: /etc/apparmor.d/usr.lib.snapd.snap-confine.real
+        dest: /etc/apparmor.d/disable/usr.lib.snapd.snap-confine.real
+        state: link
+      notify: restart apparmor
+
+    # A bunch of stuff for unattended-upgrades
+    - name: Install unattended-upgrades
+      apt:
+        state: present
+        name: unattended-upgrades
+
+    - name: Configure unattended-upgrades
+      copy:
+        src: files/50unattended-upgrades
+        dest: /etc/apt/apt.conf.d/50unattended-upgrades
+
+    - name: Configure auto-upgrades
+      copy:
+        src: files/20auto-upgrades
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+
+    - name: Enable unattended reboots
+      template:
+        src: 51automatic-reboot.j2
+        dest: /etc/apt/apt.conf.d/51automatic-reboot
+      when: ubuntu_auto_reboot_time is defined
+      notify: restart unattended upgrades
+
+    - name: Start Prometheus exporter
+      apt:
+        name: prometheus-node-exporter
+        state: present
+
+    - name: Enable Prometheus export access
+      community.general.ufw:
+        rule: allow
+        protocol: tcp
+        port: 9100
+
+    - name: Install Docker and related libs
+      apt:
+        state: present
+        name: "{{ item }}"
+      loop:
+        - docker.io
+        - python3-docker
+
+    - name: Add localhost entry for /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127.0.1.1'
+        line: 127.0.1.1 {{ ansible_hostname }}

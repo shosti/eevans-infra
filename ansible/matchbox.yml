@@ -1,0 +1,9 @@
+# Setup matchbox
+---
+- hosts: matchbox
+  become: yes
+  vars_files:
+    - secrets.yml
+
+  roles:
+    - matchbox

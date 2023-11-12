@@ -1,0 +1,4 @@
+# {{ ansible_managed }}
+{% for domain in pihole_custom_cnames %}
+cname={{ domain.alias }},{{ domain.domain }}
+{% endfor %}

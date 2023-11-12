@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+[Unit]
+# containerd puts stuff in the opt directory by default
+Before=containerd.service
+
+[Automount]
+Where=/opt
+
+[Install]
+WantedBy=multi-user.target

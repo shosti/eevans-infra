@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+for d in helm-controller kustomize-controller notification-controller source-controller; do
+    kubectl scale deployment "$d" -n flux-system --replicas=1
+done

@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+
+TMPDIR="$(mktemp -d)"
+cleanup() {
+    rm -rf "$TMPDIR"
+}
+trap cleanup EXIT
+
+mkdir -p "$DIR/out"
+git clone git@github.com:ipxe/ipxe.git "$TMPDIR"
+(
+    cd "$TMPDIR/src"
+    sed -Ei 's/#undef\s+DOWNLOAD_PROTO_HTTPS/#define DOWNLOAD_PROTO_HTTPS/' config/general.h
+
+    # See https://github.com/ipxe/ipxe/issues/606#issuecomment-1057367152
+    export CERT=ca.pem,isrgrootx1.pem,lets-encrypt-r3.pem
+    export TRUST=ca.pem,isrgrootx1.pem,lets-encrypt-r3.pem
+    curl -s http://ca.ipxe.org/ca.crt > ca.pem
+    curl -s https://letsencrypt.org/certs/isrgrootx1.pem > isrgrootx1.pem
+    curl -s https://letsencrypt.org/certs/lets-encrypt-r3.pem > lets-encrypt-r3.pem
+
+    export NO_WERROR=1 # See https://github.com/ipxe/ipxe/issues/620
+    make -j "$(nproc)" bin/undionly.kpxe EMBED="$DIR/matchbox.ipxe"
+    cp bin/undionly.kpxe "$DIR/out"
+)

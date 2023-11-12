@@ -1,0 +1,58 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: eevans-infra
+  namespace: flux-system
+spec:
+  interval: 5m0s
+  timeout: 2m
+  recurseSubmodules: true
+  ref:
+    branch: main
+  secretRef:
+    name: flux-system
+  url: ssh://git@gitea-ssh.gitea.svc.cluster.local/shosti/eevans-infra
+  verify:
+    mode: head
+    secretRef:
+      name: pgp-public-keys
+---
+apiVersion: notification.toolkit.fluxcd.io/v1
+kind: Receiver
+metadata:
+  name: gitea
+  namespace: flux-system
+spec:
+  type: generic
+  secretRef:
+    name: webhook-token
+  resources:
+    - kind: GitRepository
+      name: eevans-infra
+    - kind: OCIRepository
+      name: local-apps
+---
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: OCIRepository
+metadata:
+  name: local-apps
+  namespace: flux-system
+spec:
+  interval: 5m0s
+  url: oci://gitea.eevans.me/shosti/eevans-infra/app-config
+  ref:
+    tag: latest
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: flux-system
+  namespace: flux-system
+spec:
+  interval: 10m0s
+  path: ./k8s/deploy/flux-system
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: eevans-infra

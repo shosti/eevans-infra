@@ -1,0 +1,151 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: keycloak-db
+  namespace: keycloak
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: postgresql
+      version: 10.9.1
+      sourceRef:
+        kind: HelmRepository
+        name: bitnami
+        namespace: flux-system
+      interval: 1m
+  values:
+    postgresqlUsername: keycloak
+    postgresqlDatabase: keycloak
+    existingSecret: keycloak-postgres
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+        namespace: monitoring
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: postgres-config-keycloak
+  namespace: keycloak
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: ./k8s/charts/postgres-config
+      sourceRef:
+        kind: GitRepository
+        name: eevans-infra
+        namespace: flux-system
+      interval: 1m
+  values:
+    postgresService: keycloak-db-postgresql-headless
+
+    backups:
+      enabled: true
+      repositoryName: b2:eevans-lan-db-backups:keycloak
+      postgresql:
+        host: keycloak-db-postgresql-0
+        database: keycloak
+        user: keycloak
+      postgresCredentials:
+        name: keycloak-postgres
+        key: postgresql-password
+      healthCheckURL: https://hc-ping.com/6137a319-ba4e-4e09-a3cf-b39cba15837e
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: keycloak
+  namespace: keycloak
+spec:
+  interval: 15m
+  timeout: 15m
+  chart:
+    spec:
+      chart: keycloak
+      version: 17.0.1
+      sourceRef:
+        kind: HelmRepository
+        name: codecentric
+        namespace: flux-system
+      interval: 1m
+  values:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 768Mi
+      limits:
+        cpu: 1
+        memory: 768Mi
+
+    postgresql:
+      enabled: false
+
+    serviceMonitor:
+      enabled: true
+
+    prometheusRule:
+      enabled: true
+
+    extraEnv: |
+      - name: PROXY_ADDRESS_FORWARDING
+        value: "true"
+      - name: DB_VENDOR
+        value: postgres
+      - name: DB_ADDR
+        value: keycloak-db-postgresql-0.keycloak-db-postgresql-headless
+      - name: DB_PORT
+        value: "5432"
+      - name: DB_DATABASE
+        value: keycloak
+      - name: DB_USER_FILE
+        value: /secrets/db-creds/username
+      - name: DB_PASSWORD_FILE
+        value: /secrets/db-creds/password
+      - name: KEYCLOAK_STATISTICS
+        value: all
+
+    extraVolumeMounts: |
+      - name: db-creds
+        mountPath: /secrets/db-creds
+        readOnly: true
+
+    extraVolumes: |
+      - name: db-creds
+        secret:
+          secretName: keycloak-postgres
+          items:
+            - key: postgresql-username
+              path: username
+            - key: postgresql-password
+              path: password
+
+    service:
+      httpPort: 8080
+
+    ingress:
+      enabled: true
+      ingressClassName: cilium
+      rules:
+        - host: keycloak.eevans.me
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - hosts:
+            - keycloak.eevans.me
+          secretName: keycloak-tls
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+        nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"

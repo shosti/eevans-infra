@@ -1,0 +1,6 @@
+# {{ ansible_managed }}
+
+module(load="omprog")
+module(load="mmutf8fix")
+action(type="mmutf8fix" replacementChar="?")
+action(type="omfwd" protocol="tcp" target="{{ rsyslog_promtail_server }}" port="{{ rsyslog_promtail_port }}" Template="RSYSLOG_SyslogProtocol23Format" TCP_Framing="octet-counted" KeepAlive="on")

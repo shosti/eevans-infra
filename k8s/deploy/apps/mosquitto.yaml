@@ -1,0 +1,32 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: mosquitto
+  namespace: iot
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: ./k8s/charts/mosquitto
+      sourceRef:
+        kind: GitRepository
+        name: eevans-infra
+        namespace: flux-system
+      interval: 1m
+  values:
+    service:
+      type: LoadBalancer
+      annotations:
+        external-dns.alpha.kubernetes.io/hostname: mqtt.eevans.me.
+        external-dns.alpha.kubernetes.io/ttl: "1m"
+    tls:
+      dnsNames:
+        - mqtt.eevans.me
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 100m
+        memory: 256Mi

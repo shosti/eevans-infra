@@ -1,0 +1,9 @@
+# Setup chrony servers
+---
+- hosts: chrony
+  become: yes
+  vars_files:
+    - secrets.yml
+
+  roles:
+    - chrony_server

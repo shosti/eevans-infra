@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "esphome.fullname" . }}-config
+  labels:
+    {{- include "esphome.labels" . | nindent 4 }}
+data:
+{{ (.Files.Glob "config/*").AsConfig | indent 2 }}

@@ -1,0 +1,375 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: grafana-db
+  namespace: monitoring
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: postgresql
+      version: 10.16.2
+      sourceRef:
+        kind: HelmRepository
+        name: bitnami
+        namespace: flux-system
+      interval: 1m
+  values:
+    postgresqlUsername: grafana
+    postgresqlDatabase: grafana
+    existingSecret: grafana-db
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: monitoring
+  namespace: monitoring
+spec:
+  interval: 15m
+  timeout: 15m
+  install:
+    remediation:
+      retries: 10
+  chart:
+    spec:
+      chart: kube-prometheus-stack
+      version: 51.3.0
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-com
+        namespace: flux-system
+      interval: 1m
+  values:
+    prometheusOperator:
+      admissionWebhooks:
+        enabled: false
+
+    prometheus:
+      prometheusSpec:
+        resources:
+          requests:
+            cpu: 500m
+            memory: 3Gi
+          limits:
+            cpu: "4"
+            memory: 3Gi
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 30Gi
+        serviceMonitorSelectorNilUsesHelmValues: false
+        podMonitorSelectorNilUsesHelmValues: false
+        ruleSelectorNilUsesHelmValues: false
+        probeSelectorNilUsesHelmValues: false
+      ingress:
+        enabled: true
+        ingressClassName: nginx
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+          nginx.ingress.kubernetes.io/auth-url: "https://$host/oauth2/auth"
+          nginx.ingress.kubernetes.io/auth-signin: "https://$host/oauth2/start?rd=$escaped_request_uri"
+        hosts:
+          - prometheus.eevans.me
+        paths:
+          - /
+        tls:
+          - secretName: prometheus-tls
+            hosts:
+              - prometheus.eevans.me
+
+    alertmanager:
+      config:
+        receivers:
+          - name: blackhole
+          - name: PagerDuty
+            pagerduty_configs:
+              - routing_key: R02GPS3LR708CI9KZ46R7EJBD0DXSHVI
+          - name: Healthchecks
+            webhook_configs:
+              - url: https://hc-ping.com/d175e106-43b8-4839-aa18-d9817bd25899
+                send_resolved: false
+        route:
+          group_by: ['job']
+          receiver: blackhole
+          routes:
+            - receiver: Healthchecks
+              repeat_interval: 30m
+              matchers:
+                - alertname = Watchdog
+            - receiver: PagerDuty
+              matchers:
+                - severity =~ (error|critical)
+      ingress:
+        enabled: true
+        ingressClassName: nginx
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+          nginx.ingress.kubernetes.io/auth-url: "https://$host/oauth2/auth"
+          nginx.ingress.kubernetes.io/auth-signin: "https://$host/oauth2/start?rd=$escaped_request_uri"
+        hosts:
+          - alertmanager.eevans.me
+        paths:
+          - /
+        tls:
+          - secretName: alertmanager-tls
+            hosts:
+              - alertmanager.eevans.me
+      podDisuptionBudget:
+        enabled: true
+        minAvailable: 2
+      alertmanagerSpec:
+        replicas: 3
+        podAntiAffinity: hard
+        storage:
+          volumeClaimTemplate:
+            spec:
+              resources:
+                requests:
+                  storage: 5Gi
+        resources:
+          requests:
+            cpu: 20m
+            memory: 128Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+
+    grafana:
+      enabled: true
+
+      persistence:
+        enabled: false
+
+      envFromSecret: grafana-env
+
+      plugins:
+        - grafana-worldmap-panel
+        - grafana-piechart-panel
+
+      notifiers:
+        notifiers.yaml:
+          notifiers:
+            - name: alertmanager
+              uid: alertmanager
+              type: prometheus-alertmanager
+              is_default: true
+              settings:
+                url: http://monitoring-kube-prometheus-alertmanager:9093
+
+      ingress:
+        enabled: true
+        ingressClassName: cilium
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+        hosts:
+          - grafana.eevans.me
+        tls:
+          - secretName: grafana-tls
+            hosts:
+            - grafana.eevans.me
+
+      grafana.ini:
+        paths:
+          data: /var/lib/grafana/data
+          logs: /var/log/grafana
+          plugins: /var/lib/grafana/plugins
+          provisioning: /etc/grafana/provisioning
+        analytics:
+          check_for_updates: false
+        log:
+          mode: console
+        database:
+          type: postgres
+          host: grafana-db-postgresql-0.grafana-db-postgresql-headless
+          name: grafana
+          user: grafana
+          ssl_mode: disable
+        grafana_net:
+          url: https://grafana.net
+        server:
+          root_url: https://grafana.eevans.me
+        auth:
+          oauth_auto_login: true
+          # TODO: See if this can be mitigated, see
+          # https://github.com/grafana/grafana/issues/70203#issuecomment-1603895013
+          oauth_allow_insecure_email_lookup: true
+        auth.generic_oauth:
+          enabled: true
+          client_id: grafana
+          allow_sign_up: true
+          allowed_domains: eevans.lan eevans.co
+          auth_url: https://keycloak.eevans.me/auth/realms/eevans-lan/protocol/openid-connect/auth
+          token_url: http://keycloak-http.keycloak:8080/auth/realms/eevans-lan/protocol/openid-connect/token
+          api_url: http://keycloak-http.keycloak:8080/auth/realms/eevans-lan/protocol/openid-connect/userinfo
+          scopes: 'openid profile email'
+          role_attribute_path: role
+          name: Keycloak
+
+      additionalDataSources:
+        - name: Loki
+          type: loki
+          url: http://loki:3100/
+          access: proxy
+
+    # These require some extra setup before working, and meanwhile they set off
+    # alerts so disable them for now.
+    kubeEtcd:
+      enabled: false
+
+    kubeControllerManager:
+      enabled: false
+
+    kubeScheduler:
+      enabled: false
+
+    kubeProxy:
+      enabled: false
+  valuesFrom:
+    - kind: Secret
+      name: prometheus-stack-values
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: monitoring-config
+  namespace: monitoring
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: ./k8s/charts/monitoring-config
+      sourceRef:
+        kind: GitRepository
+        name: eevans-infra
+        namespace: flux-system
+      interval: 1m
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: prometheus-blackbox-exporter
+  namespace: monitoring
+spec:
+  interval: 15m
+  timeout: 15m
+  chart:
+    spec:
+      chart: prometheus-blackbox-exporter
+      version: 8.3.0
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-com
+        namespace: flux-system
+      interval: 1m
+  values:
+    serviceMonitor:
+      enabled: true
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: prometheus-graphite-exporter
+  namespace: monitoring
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: ./k8s/charts/prometheus-graphite-exporter
+      sourceRef:
+        kind: GitRepository
+        name: eevans-infra
+        namespace: flux-system
+      interval: 1m
+  values:
+    config:
+      mappings:
+        - match: "servers.*.disk.*.*.*"
+          name: "${3}_${4}"
+          labels:
+            instance: "${1}"
+            disk: "${2}"
+            job: truenas
+        - match: "servers.*.df.*.*.*"
+          name: "${3}_${4}"
+          labels:
+            instance: "${1}"
+            filesystem: "${2}"
+            job: truenas
+        - match: "servers.*.aggregation.*.*.*"
+          name: "${2}_${4}"
+          labels:
+            instance: "${1}"
+            type: "${3}"
+            job: truenas
+        - match: "servers.*.cpu.*.*.*"
+          name: "${3}_${4}"
+          labels:
+            instance: "${1}"
+            cpu: "${2}"
+            job: truenas
+        - match: "servers.*.geom_stat.*.*.*"
+          name: "${2}_${4}"
+          labels:
+            instance: "${1}"
+            disk: "${3}"
+            job: truenas
+        - match: "servers.*.geom_stat.*.*"
+          name: "${2}"
+          labels:
+            instance: "${1}"
+            disk: "${3}"
+            job: truenas
+        - match: "servers.*.interface.*.*.*"
+          name: "${3}_${4}"
+          labels:
+            instance: "${1}"
+            interface: "${2}"
+            job: truenas
+        - match: "servers.*.*.*"
+          name: "${3}"
+          labels:
+            instance: "${1}"
+            type: "${2}"
+            job: truenas
+        - match: "servers.*.*.*.*"
+          name: "${3}_${4}"
+          labels:
+            instance: "${1}"
+            type: "${2}"
+            job: truenas
+        - match: "servers.*.*.*.*.*"
+          name: "${3}_${4}_${5}"
+          labels:
+            instance: "${1}"
+            type: "${2}"
+            job: truenas
+        - match: "servers.*.*.*.*.*.*"
+          name: "${3}_${4}_${5}_${6}"
+          labels:
+            instance: "${1}"
+            type: "${2}"
+            job: truenas
+
+    services:
+      graphite:
+        type: LoadBalancer
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: graphite.eevans.me.
+          external-dns.alpha.kubernetes.io/ttl: "5m"
+    serviceMonitor:
+      enabled: true

@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+#
+# {{ ansible_managed }}
+
+set -euo pipefail
+
+TMPDIR="$(mktemp -d)"
+cleanup() {
+    rm -rf "$TMPDIR"
+}
+trap cleanup EXIT
+FILENAME="tang-{{ ansible_hostname }}-$(date '+%Y%m%d%H%M%S').tar.bz2.gpg"
+
+. /opt/tang-b2-environment
+
+(
+    cd /opt
+    tar -cj tang -O | \
+        gpg --batch --trust-model always --encrypt -r {{ tang_server_gpg_key_id }} > \
+            "$TMPDIR/$FILENAME"
+    backblaze-b2 authorize-account "$B2_APPLICATION_KEY_ID" "$B2_APPLICATION_KEY"
+    backblaze-b2 upload-file {{ tang_server_b2_bucket_name }} "$TMPDIR/$FILENAME" "$FILENAME"
+)

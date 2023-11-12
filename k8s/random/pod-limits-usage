@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+getresources() {
+    echo "NAME	CPUREQ	CPULIM	MEMREQ	MEMLIM"
+    kubectl get po -ojson | \
+        jq '.items | map([.metadata.name, .spec.containers[0].resources.requests.cpu, .spec.containers[0].resources.limits.cpu, .spec.containers[0].resources.requests.memory, .spec.containers[0].resources.limits.memory]) | .[] | @tsv' -r
+}
+
+getresources | column -t -s "	"

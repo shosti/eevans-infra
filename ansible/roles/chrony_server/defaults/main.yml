@@ -1,0 +1,5 @@
+---
+# defaults file for chrony_server
+chrony_server_allow: 10.0.0.0/8
+
+chrony_server_hardware_gps: false

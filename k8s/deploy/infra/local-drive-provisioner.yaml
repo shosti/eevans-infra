@@ -1,0 +1,78 @@
+---
+# This is my custom daemonset to prep drives with encryption
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app.kubernetes.io/name: local-drive-provisioner
+  name: local-drive-provisioner
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: local-drive-provisioner
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: local-drive-provisioner
+    spec:
+      terminationGracePeriodSeconds: 5
+      containers:
+        - name: provision
+          image: shosti/local-drive-provisioner:v4
+          imagePullPolicy: Always
+          securityContext:
+            privileged: true
+          env:
+            - name: NODE
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - mountPath: /dev
+              name: dev
+            - mountPath: /run/lvm
+              name: run-lvm
+            - mountPath: /mnt/disks
+              name: mnt-disks
+            - mountPath: /config
+              name: config
+      volumes:
+        - hostPath:
+            path: /dev
+          name: dev
+        - hostPath:
+            path: /mnt/disks
+          name: mnt-disks
+        - hostPath:
+            path: /run/lvm
+          name: run-lvm
+        - name: config
+          secret:
+            secretName: local-drives
+---
+# This is the official provisioner
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: local-static-provisioner
+  namespace: kube-system
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: local-static-provisioner
+      version: 2.0.0
+      sourceRef:
+        kind: HelmRepository
+        name: sig-storage-local-static-provisioner
+        namespace: flux-system
+      interval: 1m
+  values:
+    classes:
+      - name: local-drive
+        hostDir: /mnt/disks
+        volumeMode: Filesystem
+        storageClass: true
+    serviceMonitor:
+      enabled: true

@@ -1,0 +1,6 @@
+- import_playbook: ubuntu.yml
+- import_playbook: rpi.yml
+- import_playbook: pihole.yml
+- import_playbook: rpi_chrony.yml
+- import_playbook: tang.yml
+- import_playbook: matchbox.yml

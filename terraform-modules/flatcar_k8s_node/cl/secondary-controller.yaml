@@ -1,0 +1,65 @@
+---
+systemd:
+  units:
+    - name: kubeadm-provision.service
+      enabled: true
+      contents: |
+        [Unit]
+        Requires=fscrypt-unlock.service
+        After=fscrypt-unlock.service
+        Requires=install-binaries.service
+        After=install-binaries.service
+        Requires=containerd.service
+        After=containerd.service
+        [Service]
+        Type=oneshot
+        ExecStart=/opt/bin/kubeadm-provision
+        [Install]
+        WantedBy=multi-user.target
+
+storage:
+  files:
+    - path: /opt/bin/kubeadm-provision
+      filesystem: root
+      mode: 0755
+      contents:
+        inline: |
+          #!/usr/bin/env bash
+
+          set -euo pipefail
+          export PATH="/opt/bin:$PATH"
+
+          if [ -f /opt/kubernetes/PROVISIONED ]; then
+              echo "Already provisioned"
+              exit 0
+          fi
+
+          # Make "drop box" for join command
+          chmod 0750 /opt/secrets
+          chown root:core /opt/secrets
+          mkdir -p /opt/secrets/join
+          chmod 0700 /opt/secrets/join
+          chown core:core /opt/secrets/join
+
+          touch /opt/kubernetes/WAITING
+
+          while true; do
+              if [ -f /opt/kubernetes/READY ]; then
+                  chown root:root /opt/secrets/join/encryption-config.yaml
+                  chmod 0600 /opt/secrets/join/encryption-config.yaml
+                  mkdir -p /opt/secrets/kube-api
+                  mv /opt/secrets/join/encryption-config.yaml /opt/secrets/kube-api/
+
+                  eval "$(cat /opt/secrets/join/command.txt) --cri-socket=unix:///run/containerd/containerd.sock"
+                  rm -rf /opt/secrets/join
+
+                  # kube-vip has to be added *after* kubeadm runs to keep the
+                  # preflight checks happy
+                  default_if="$(ip route | awk '/default/ { print $5 }')"
+                  sed "s/%NETWORK_INTERFACE%/$default_if/" /opt/kubernetes/manifests/kube-vip.yaml > /etc/kubernetes/manifests/kube-vip.yaml
+                  touch /opt/kubernetes/PROVISIONED
+                  exit 0
+              fi
+              echo "Waiting for join command"
+              sleep 1
+          done

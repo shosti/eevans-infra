@@ -1,0 +1,5 @@
+---
+- hosts: vyos
+
+  roles:
+    - vyos_router

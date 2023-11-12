@@ -1,0 +1,29 @@
+---
+# handlers file for pihole
+- name: Restart Unbound
+  systemd:
+    name: unbound
+    daemon_reload: true
+    state: restarted
+  listen: restart unbound
+
+- name: Restart Pi-hole DNS
+  command: "docker exec pihole pihole restartdns"
+  listen: restart dns
+
+- name: Restart Pi-hole lighttpd
+  command: "docker exec pihole service lighttpd restart"
+  listen: restart lighttpd
+
+- name: Restart Pi-hole
+  systemd:
+    name: pihole
+    state: restarted
+    daemon_reload: true
+  listen: restart pihole
+
+- name: Restart keepalived
+  systemd:
+    name: keepalived
+    state: restarted
+  listen: restart keepalived

@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+#
+# This script bootstraps a new cluster for the first time. It should be
+# idempotent, but don't do it multiple usually (it's really just for when flux
+# is broken).
+
+set -euo pipefail
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+TMPDIR="$(mktemp -d)"
+chmod 0700 "$TMPDIR"
+cleanup() {
+    rm -rf "$TMPDIR"
+}
+trap cleanup EXIT
+
+ssh core@k8s0 sudo cat /etc/kubernetes/admin.conf > "$TMPDIR/admin.conf"
+chmod 0600 "$TMPDIR/admin.conf"
+export KUBECONFIG="$TMPDIR/admin.conf"
+
+"$DIR/prep-nodes"
+
+helm upgrade --install cilium cilium/cilium -n kube-system \
+     --atomic \
+     --version 1.10.3 \
+     --values "$DIR/../bootstrap-config/cilium.yaml"
+kubectl apply -f "$DIR/../misc/monitoring-crds.yaml"
+kubectl apply -k "$DIR/../deploy/flux-system"
+sops -d "$DIR/../secrets/flux-system/sops-gpg.yaml" | kubectl apply -f -
+sops -d "$DIR/../secrets/flux-system/flux-system.yaml" | kubectl apply -f -
+sops -d "$DIR/../secrets/flux-system/pgp-public-keys.yaml" | kubectl apply -f -
+kubectl apply -k "$DIR/../deploy/clusters/lan"

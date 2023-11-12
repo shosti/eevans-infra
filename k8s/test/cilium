@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+kubectl create ns cilium-test
+trap 'kubectl delete ns cilium-test' EXIT
+
+kubectl apply -n cilium-test -f https://raw.githubusercontent.com/cilium/cilium/v1.10/examples/kubernetes/connectivity-check/connectivity-check.yaml
+
+watch kubectl get po -owide -n cilium-test

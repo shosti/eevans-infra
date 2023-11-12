@@ -1,0 +1,113 @@
+---
+systemd:
+  units:
+    - name: kubeadm-provision.service
+      enabled: true
+      contents: |
+        [Unit]
+        Requires=fscrypt-unlock.service
+        After=fscrypt-unlock.service
+        Requires=install-binaries.service
+        After=install-binaries.service
+        Requires=containerd.service
+        After=containerd.service
+        [Service]
+        Type=oneshot
+        ExecStart=/opt/bin/kubeadm-provision
+        [Install]
+        WantedBy=multi-user.target
+
+storage:
+  files:
+    - path: /opt/kubernetes/kubeadm-config.yaml
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          apiVersion: kubeadm.k8s.io/v1beta2
+          kind: InitConfiguration
+          nodeRegistration:
+            criSocket: /run/containerd/containerd.sock
+            kubeletExtraArgs:
+              container-runtime: remote
+              container-runtime-endpoint: unix:///run/containerd/containerd.sock
+              volume-plugin-dir: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
+          ---
+          kind: ClusterConfiguration
+          apiVersion: kubeadm.k8s.io/v1beta2
+          kubernetesVersion: ${k8s_version}
+          controlPlaneEndpoint: "${k8s_api_address}:6443"
+          networking:
+            podSubnet: "${pod_subnet}"
+            serviceSubnet: "${service_subnet}"
+          etcd:
+            local:
+              extraArgs:
+                # TODO: turn this off somehow
+                enable-v2: "true"
+          apiServer:
+            extraArgs:
+              encryption-provider-config: /usr/local/etc/encryption-config.yaml
+              oidc-issuer-url: "${oidc_issuer_url}"
+              oidc-client-id: kubernetes
+              oidc-username-claim: preferred_username
+              oidc-username-prefix: "oidc:"
+            extraVolumes:
+              - name: usr-local-etc
+                hostPath: /opt/secrets/kube-api
+                mountPath: /usr/local/etc
+                readOnly: true
+                pathType: Directory
+          controllerManager:
+            extraArgs:
+              flex-volume-plugin-dir: "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/"
+          ---
+          kind: KubeletConfiguration
+          apiVersion: kubelet.config.k8s.io/v1beta1
+          cgroupDriver: systemd
+          serverTLSBootstrap: true
+          shutdownGracePeriod: 300s
+          shutdownGracePeriodCriticalPods: 30s
+
+    - path: /opt/bin/kubeadm-provision
+      filesystem: root
+      mode: 0755
+      contents:
+        inline: |
+          #!/usr/bin/env bash
+
+          set -euo pipefail
+          export PATH="/opt/bin:$PATH"
+
+          if [ -f /opt/kubernetes/PROVISIONED ]; then
+              echo "Already provisioned"
+              exit 0
+          fi
+
+          # Create encryption config
+          mkdir -p /opt/secrets/kube-api
+          true > /opt/secrets/kube-api/encryption-config.yaml
+          chmod 0600 /opt/secrets/kube-api/encryption-config.yaml
+
+          cat <<EOS >> /opt/secrets/kube-api/encryption-config.yaml
+          apiVersion: apiserver.config.k8s.io/v1
+          kind: EncryptionConfiguration
+          resources:
+            - resources:
+              - secrets
+              providers:
+              - secretbox:
+                  keys:
+                  - name: key1
+                    secret: $(head -c 32 /dev/urandom | base64)
+              - identity: {}
+          EOS
+
+          # kube-vip needs to be in place *before* kubeadm starts for
+          # boostrapping to be successful
+          default_if="$(ip route | awk '/default/ { print $5 }')"
+          mkdir -p /etc/kubernetes/manifests
+          sed "s/%NETWORK_INTERFACE%/$default_if/" /opt/kubernetes/manifests/kube-vip.yaml > /etc/kubernetes/manifests/kube-vip.yaml
+
+          kubeadm init --config=/opt/kubernetes/kubeadm-config.yaml --skip-token-print --skip-certificate-key-print
+          touch /opt/kubernetes/PROVISIONED

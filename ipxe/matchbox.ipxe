@@ -1,0 +1,4 @@
+#!ipxe
+
+dhcp
+chain https://matchbox.eevans.me:8880/boot.ipxe

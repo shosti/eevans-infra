@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+NODES="k8s0 k8s1 k8s2"
+SRIOV_NODES="k8s0 k8s2"
+
+for node in $NODES; do
+    kubectl taint node "$node" node-role.kubernetes.io/master- || echo "$node already untainted"
+    kubectl taint node "$node" node-role.kubernetes.io/control-plane- || echo "$node already untainted"
+    kubectl label node "$node" node-role.kubernetes.io/worker= --overwrite
+    kubectl label node "$node" node-role.kubernetes.io/master= --overwrite
+    kubectl label node "$node" node-role.kubernetes.io/control-plane= --overwrite
+done
+
+for node in $SRIOV_NODES; do
+    kubectl label node "$node" feature.node.kubernetes.io/network-sriov.capable="true" --overwrite
+done

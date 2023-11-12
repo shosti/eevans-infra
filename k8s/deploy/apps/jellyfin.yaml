@@ -1,0 +1,51 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: jellyfin
+  namespace: jellyfin
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: ./k8s/charts/jellyfin
+      sourceRef:
+        kind: GitRepository
+        name: eevans-infra
+        namespace: flux-system
+      interval: 1m
+  values:
+    user:
+      uid: 1005
+      gid: 499
+
+    volumes:
+      media:
+        server: storage.dc.eevans.me
+        path: /mnt/storage/files/media
+
+    configStorage:
+      size: 5Gi
+      class: rook-ceph-block
+
+    ingress:
+      enabled: true
+      ingressClassName: cilium
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+      hosts:
+        - host: jellyfin.eevans.me
+          paths:
+            - /
+      tls:
+        - secretName: jellyfin-tls
+          hosts:
+            - jellyfin.eevans.me
+
+    resources:
+      requests:
+        cpu: '2'
+        memory: 1.5Gi
+      limits:
+        cpu: '2'
+        memory: 1.5Gi

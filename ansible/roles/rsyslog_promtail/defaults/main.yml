@@ -1,0 +1,4 @@
+---
+# defaults file for rsyslog_promtail
+rsyslog_promtail_server: syslog.example.com
+rsyslog_promtail_port: 1514

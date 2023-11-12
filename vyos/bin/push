@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+S3_BUCKET=vyos-images
+export AWS_ENDPOINT_URL=https://s3.eevans.me
+export AWS_ACCESS_KEY_ID=X24DZJTPBI0H9S1A5EFE
+export AWS_SECRET_ACCESS_KEY="$(pass "Server/bucket/$S3_BUCKET/$AWS_ACCESS_KEY_ID")"
+
+FILE="$1"
+KEY="$(basename "$FILE")"
+SHASUM="$(sha256sum "$FILE" | awk '{print $1}')"
+
+echo "pushing $FILE to s3://$S3_BUCKET/$KEY"
+aws s3api put-object \
+    --bucket "$S3_BUCKET" \
+    --key "$KEY" \
+    --body "$FILE" \
+    --acl public-read \
+    --checksum-sha256 "$SHASUM"
+
+echo pushing "$FILE.asc to s3://$S3_BUCKET/$KEY.asc"
+aws s3api put-object \
+    --bucket "$S3_BUCKET" \
+    --key "$KEY.asc" \
+    --acl public-read \
+    --body "$FILE.asc"

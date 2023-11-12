@@ -1,0 +1,64 @@
+---
+# tasks file for chrony_server
+- name: Install packages
+  apt:
+    state: present
+    name:
+      - chrony
+      - gpsd
+      - gpsd-clients
+      - minicom
+      - ntpdate
+      - pps-tools
+
+- name: Configure boot parameters
+  lineinfile:
+    dest: /boot/firmware/usercfg.txt
+    regexp: '{{ item }}'
+    line: '{{ item }}'
+  loop:
+    # Enable PPS device over GPIO
+    - dtoverlay=pps-gpio,gpiopin=4
+    # Ubuntu enables these by default and they seem to interfere with the GPS
+    - dtparam=audio=off
+    - dtparam=i2c_arm=off
+    - dtparam=spi=off
+
+- name: Configure gpsd
+  template:
+    src: gpsd.j2
+    dest: /etc/default/gpsd
+  notify: restart gpsd
+  when: chrony_server_hardware_gps
+
+- name: Enable gpsd
+  systemd:
+    name: gpsd
+    enabled: true
+    state: started
+  when: chrony_server_hardware_gps
+
+- name: Disable systemd-timesyncd
+  systemd:
+    name: systemd-timesyncd
+    enabled: false
+    state: stopped
+
+- name: Configure chrony
+  template:
+    src: chrony.conf.j2
+    dest: /etc/chrony/chrony.conf
+    backup: true
+  notify: restart chrony
+
+- name: Enable chrony
+  systemd:
+    name: chrony
+    enabled: true
+    state: started
+
+- name: Allow NTP firewall access
+  community.general.ufw:
+    rule: allow
+    proto: udp
+    port: 123

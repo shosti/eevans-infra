@@ -1,0 +1,214 @@
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: hass
+  namespace: iot
+  labels:
+    app.kubernetes.io/name: hass
+    eevans.me/type: vm
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: hass
+        eevans.me/type: vm
+    spec:
+      terminationGracePeriodSeconds: 600
+      domain:
+        resources:
+          limits:
+            memory: 2Gi
+            cpu: 2
+        devices:
+          disks:
+            - name: bootdrive
+              disk: {}
+          interfaces:
+            - name: default
+              masquerade: {}
+              ports:
+                - name: http
+                  port: 8123
+                - name: http-observer
+                  port: 4357
+                - name: ssh
+                  port: 22
+            - name: iot-net
+              sriov: {}
+
+        firmware:
+          bootloader:
+            efi:
+              secureBoot: false
+      networks:
+        - name: default
+          pod: {}
+        - name: iot-net
+          multus:
+            networkName: default/iot-net
+      readinessProbe:
+        initialDelaySeconds: 90
+        periodSeconds: 30
+        httpGet:
+          port: http-observer
+      livenessProbe:
+        initialDelaySeconds: 600
+        periodSeconds: 30
+        httpGet:
+          port: http-observer
+      volumes:
+      - name: bootdrive
+        persistentVolumeClaim:
+          claimName: hass-boot
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hass
+  namespace: iot
+  labels:
+    app.kubernetes.io/name: hass
+    eevans.me/prometheus: "true"
+spec:
+  ports:
+  - name: http
+    port: 8123
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/name: hass
+    eevans.me/type: vm
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hass-ssh
+  namespace: iot
+  labels:
+    app.kubernetes.io/name: hass
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: hass-ssh.eevans.me.
+    external-dns.alpha.kubernetes.io/ttl: "1m"
+spec:
+  ports:
+  - name: ssh
+    port: 22
+    protocol: TCP
+    targetPort: ssh
+  selector:
+    app.kubernetes.io/name: hass
+    eevans.me/type: vm
+  type: LoadBalancer
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hass
+  namespace: iot
+  labels:
+    app.kubernetes.io/name: hass
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+spec:
+  ingressClassName: cilium
+  rules:
+  - host: hass.eevans.me
+    http:
+      paths:
+      - backend:
+          service:
+            name: hass
+            port:
+              name: http
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - hass.eevans.me
+    secretName: hass-tls
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: hass
+  namespace: iot
+  labels:
+    app.kubernetes.io/name: hass
+spec:
+  endpoints:
+    - port: http
+      path: /api/prometheus
+      bearerTokenSecret:
+        name: hass-prometheus-auth
+        key: token
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: hass
+      eevans.me/prometheus: "true"
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: hass-egress
+  namespace: iot
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: hass
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector: {}
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+        - ipBlock:
+            cidr: 10.51.60.53/32
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    - to:
+        - ipBlock:
+            cidr: 10.51.60.0/22
+      ports:
+        - port: 123
+          protocol: UDP
+        - port: 123
+          protocol: TCP
+    - to:
+        - ipBlock:
+            cidr: 10.51.60.8/32
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 192.168.0.0/16
+              - 172.16.0.0/12
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: hass
+  namespace: iot
+spec:
+  groups:
+  - name: hass.iot
+    rules:
+    - alert: HassDown
+      annotations:
+        summary: Home Assistant is unavailable
+      expr: up{job="hass",namespace="iot"} != 1
+      for: 30s
+      labels:
+        severity: critical

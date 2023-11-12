@@ -1,0 +1,13 @@
+---
+# handlers file for tang_server
+- name: Restart tang
+  systemd:
+    name: "{{ item }}"
+    daemon_reload: true
+    state: restarted
+  listen: systemd reload
+  loop:
+    - tangd-keygen.service
+    - tangd.socket
+    - tangd-update.path
+    - tangd-update.service

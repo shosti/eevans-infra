@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+#
+# Login to K8s using Keycloak.
+
+set -euo pipefail
+
+get_credentials() {
+    curl -s -X POST https://keycloak.eevans.me/auth/realms/eevans-lan/protocol/openid-connect/token \
+         -d grant_type=password \
+         -d client_id=kubernetes \
+         -d username=shosti \
+         -d password="$(pass Web/keycloak.eevans.me/shosti)" \
+         -d scope='openid offline_access' \
+         -d response_type=id_token
+}
+
+creds="$(get_credentials)"
+
+kubectl config set-credentials oidc:shosti \
+   --auth-provider=oidc \
+   --auth-provider-arg=client-id=kubernetes \
+   --auth-provider-arg=idp-issuer-url=https://keycloak.eevans.me/auth/realms/eevans-lan \
+   --auth-provider-arg=refresh-token="$(echo "$creds" | jq -r .refresh_token)" \
+   --auth-provider-arg=id-token="$(echo "$creds" | jq -r .id_token)"
+
+kubectl config set-context lan --user=oidc:shosti

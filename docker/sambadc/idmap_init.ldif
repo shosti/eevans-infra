@@ -1,0 +1,8 @@
+dn: CN=CONFIG
+cn: CONFIG
+lowerBound: 655
+upperBound: 65533
+
+dn: @INDEXLIST
+@IDXATTR: xidNumber
+@IDXATTR: objectSid

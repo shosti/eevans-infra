@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+#
+# {{ ansible_managed }}
+
+set -euo pipefail
+
+# Check if opt directory is mounted
+systemctl status opt.mount
+
+docker run --rm \
+       -v /opt/matchbox/letsencrypt/etc:/etc/letsencrypt:rw \
+       -v /opt/matchbox/letsencrypt/var:/var/letsencrypt:rw \
+       -v /opt/letsencrypt/secrets:/secrets:ro \
+       certbot/dns-cloudflare:v2.6.0 renew
+
+chown -R matchbox:matchbox /opt/matchbox/letsencrypt

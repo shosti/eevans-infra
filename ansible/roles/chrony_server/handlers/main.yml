@@ -1,0 +1,13 @@
+---
+# handlers file for chrony_server
+- name: Restart gpsd
+  systemd:
+    name: gpsd
+    state: restarted
+  listen: restart gpsd
+
+- name: Restart chrony
+  systemd:
+    name: chrony
+    state: restarted
+  listen: restart chrony

@@ -1,0 +1,14 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Open encrypted data volume
+Wants=network-online.target
+After=network-online.target
+ConditionPathExists=/data-volume-bound
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c '[ -b /dev/mapper/cryptdata ] || clevis luks unlock -d /dev/disk/by-uuid/{{ rpi_data_volume_uuid }} -n cryptdata'
+
+[Install]
+WantedBy=multi-user.target

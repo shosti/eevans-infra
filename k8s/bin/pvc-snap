@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+[ "$#" -ge 1 ] || {
+    echo "No PVC provided"
+    exit 1
+}
+
+pvc="$(kubectl get pvc -ojson "$@")"
+pvc_name="$(echo "$pvc" | jq -r .metadata.name)"
+namespace="$(echo "$pvc" | jq -r .metadata.namespace)"
+storage_class="$(echo "$pvc" | jq -r .spec.storageClassName)"
+
+snap_class=
+case "$storage_class" in
+    rook-ceph-block)
+        snap_class=csi-rbdplugin-snapclass
+        ;;
+    rook-cephfs)
+        snap_class=csi-cephfsplugin-snapclass
+        ;;
+    *)
+        echo "No snapshot class for storage class $storage_class"
+        exit 1
+        ;;
+esac
+
+ts="$(date '+%Y%m%d%H%M%S')"
+
+cat <<EOS | kubectl apply -f -
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+  name: ${pvc_name}-${ts}
+  namespace: $namespace
+spec:
+  volumeSnapshotClassName: $snap_class
+  source:
+    persistentVolumeClaimName: $pvc_name
+EOS

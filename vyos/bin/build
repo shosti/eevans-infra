@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+VERSION="$1"
+COMMIT="$2"
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+BUILDDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null && pwd )/build/vyos-build"
+
+mkdir -p "$DIR/../build"
+
+vyos_build_run() {
+    docker pull vyos/vyos-build:"$VERSION"
+    docker run --rm -it \
+           -v "$BUILDDIR":/vyos \
+           -w /vyos --privileged --sysctl net.ipv6.conf.lo.disable_ipv6=0 \
+           -e GOSU_UID="$(id -u)" -e GOSU_GID="$(id -g)" \
+           vyos/vyos-build:"$VERSION" bash -c "$*"
+}
+
+if [ -d "$BUILDDIR" ]; then
+    (
+        cd "$BUILDDIR"
+        git clean -d -x -f
+    )
+else
+    git clone -b "$VERSION" https://github.com/vyos/vyos-build "$BUILDDIR"
+fi
+
+(
+    cd "$BUILDDIR"
+    git checkout "$COMMIT"
+)
+
+vyos_build_run ./configure --architecture amd64 --build-by me@eevans.co
+vyos_build_run sudo make iso
+mkdir -p "$BUILDDIR/../../target"
+cp "$BUILDDIR/build/live-image-amd64.hybrid.iso" "$BUILDDIR/../../target/vyos-$VERSION-$COMMIT.iso"

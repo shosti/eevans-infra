@@ -1,0 +1,4 @@
+* external-dns hack
+This is a hack to build a version of external-dns compatible with K8s 1.22. Can
+remove once https://github.com/kubernetes-sigs/external-dns/issues/2168 is
+fixed.

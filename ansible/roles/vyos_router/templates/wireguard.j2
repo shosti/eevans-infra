@@ -1,0 +1,23 @@
+{% for interface in vyos_router_wireguard_interfaces %}
+{# Configure interfaces #}
+set interfaces wireguard {{ interface.vyos_if }} address {{ interface.ipv4_addr }}
+{% if interface['description'] is defined %}
+set interfaces wireguard {{ interface.vyos_if }} description "{{ interface.description }}"
+{% endif %}
+set interfaces wireguard {{ interface.vyos_if }} port {{ interface.port }}
+{# Configure peers #}
+{% for peer in interface.peers %}
+set interfaces wireguard {{ interface.vyos_if }} peer {{ peer.name }} public-key {{ peer.pubkey }}
+set interfaces wireguard {{ interface.vyos_if }} peer {{ peer.name }} allowed-ips {{ peer.allowed_ips }}
+{% if peer['address'] is defined %}
+set interfaces wireguard {{ interface.vyos_if }} peer {{ peer.name }} address {{ peer.address }}
+{% endif %}
+{% if peer['port'] is defined %}
+set interfaces wireguard {{ interface.vyos_if }} peer {{ peer.name }} port {{ peer.port }}
+{% endif %}
+{% endfor %}
+{# Configure routes #}
+{% for route in interface.static_routes %}
+set protocols static route {{ route }} interface {{ interface.vyos_if }}
+{% endfor %}
+{% endfor %}

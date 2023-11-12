@@ -1,0 +1,16 @@
+* Flatcar Secrets Handling
+
+This is a collection of weird hacks for using encrypted USB thumb drives for
+secrets on flatcar (since FDE is basically impossible). Encryption/decryption is
+handled through clevis/tang. There are a variety of hacks involved because
+clevis is super buggy 😞.
+
+** Prepping Drive
+Use the prep-drive script (with the *device*, not the partition) to set up a new
+drive that's ready for encryption.
+
+** Mounting the drive
+Use the mount-drive script to mount it and put stuff on it.
+
+** Configuration
+The config file contains the clevis config.

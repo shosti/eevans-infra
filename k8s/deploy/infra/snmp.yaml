@@ -1,0 +1,173 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: prometheus-snmp-exporter
+  namespace: monitoring
+spec:
+  interval: 15m
+  timeout: 15m
+  chart:
+    spec:
+      chart: prometheus-snmp-exporter
+      version: 1.8.0
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-com
+        namespace: flux-system
+      interval: 1m
+  values:
+    serviceMonitor:
+      enabled: false
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: snmp-rt0
+  namespace: monitoring
+spec:
+  endpoints:
+  - honorLabels: true
+    params:
+      module:
+      - if_mib
+      target:
+      - rt0
+    path: /snmp
+    port: http
+    relabelings:
+    - sourceLabels:
+      - __param_target
+      targetLabel: instance
+    scrapeTimeout: 10s
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: prometheus-snmp-exporter
+      app.kubernetes.io/name: prometheus-snmp-exporter
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: snmp-sw-core-0
+  namespace: monitoring
+spec:
+  endpoints:
+  - honorLabels: true
+    params:
+      module:
+      - if_mib
+      target:
+      - sw-core-0
+    path: /snmp
+    port: http
+    relabelings:
+    - sourceLabels:
+      - __param_target
+      targetLabel: instance
+    scrapeTimeout: 10s
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: prometheus-snmp-exporter
+      app.kubernetes.io/name: prometheus-snmp-exporter
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: snmp-sw-access-office
+  namespace: monitoring
+spec:
+  endpoints:
+  - honorLabels: true
+    params:
+      module:
+      - if_mib
+      target:
+      - sw-access-office
+    path: /snmp
+    port: http
+    relabelings:
+    - sourceLabels:
+      - __param_target
+      targetLabel: instance
+    scrapeTimeout: 10s
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: prometheus-snmp-exporter
+      app.kubernetes.io/name: prometheus-snmp-exporter
+
+# WiFi APs, let's hope the IPs don't change lol!
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: snmp-ap-bedroom
+  namespace: monitoring
+spec:
+  endpoints:
+  - honorLabels: true
+    params:
+      module:
+      - if_mib
+      target:
+      - 10.51.12.15
+    path: /snmp
+    port: http
+    relabelings:
+    - sourceLabels:
+      - __param_target
+      targetLabel: instance
+    scrapeTimeout: 10s
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: prometheus-snmp-exporter
+      app.kubernetes.io/name: prometheus-snmp-exporter
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: snmp-ap-livingroom
+  namespace: monitoring
+spec:
+  endpoints:
+  - honorLabels: true
+    params:
+      module:
+      - if_mib
+      target:
+      - 10.51.12.14
+    path: /snmp
+    port: http
+    relabelings:
+    - sourceLabels:
+      - __param_target
+      targetLabel: instance
+    scrapeTimeout: 10s
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: prometheus-snmp-exporter
+      app.kubernetes.io/name: prometheus-snmp-exporter
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: snmp-ap-office
+  namespace: monitoring
+spec:
+  endpoints:
+  - honorLabels: true
+    params:
+      module:
+      - if_mib
+      target:
+      - 10.51.12.17
+    path: /snmp
+    port: http
+    relabelings:
+    - sourceLabels:
+      - __param_target
+      targetLabel: instance
+    scrapeTimeout: 10s
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: prometheus-snmp-exporter
+      app.kubernetes.io/name: prometheus-snmp-exporter

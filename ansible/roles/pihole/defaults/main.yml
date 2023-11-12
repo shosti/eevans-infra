@@ -1,0 +1,42 @@
+---
+# defaults file for pihole
+pihole_web_password: CHANGEME
+pihole_default_domain: example.com
+pihole_private_domains:
+  - nip.io
+  - xip.io
+
+pihole_stub_zones: []
+# - name: example.com
+#   addr: 10.10.10.10
+
+pihole_custom_domains: []
+# - name: foo.example.com
+#   addr: 10.10.10.10
+
+pihole_custom_cnames: []
+# - alias: bar.example.com
+#   domain: foo.example.com
+
+pihole_blacklist_domains: []
+# - mybaddomain.com
+
+pihole_whitelist_domains: []
+
+pihole_blacklist_regexes: []
+# - .*\.mybaddomain.com
+
+pihole_backup_dns_servers:
+  - 1.1.1.1
+  - 1.0.0.1
+
+pihole_enable_letsencrypt: true
+pihole_cloudflare_api_token: CHANGEME
+pihole_letsencrypt_email: dns@example.com
+
+pihole_vip: 10.10.10.10
+pihole_keepalived_password: CHANGEME
+
+# See https://docs.pi-hole.net/ftldns/configfile/#rate_limit
+# Rate limiting is disabled by default
+pihole_rate_limit: '0/0'

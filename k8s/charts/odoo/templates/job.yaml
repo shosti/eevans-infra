@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "odoo.fullname" . }}-init
+  labels:
+    {{- include "odoo.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install
+spec:
+  template:
+    metadata:
+      name: {{ include "odoo.fullname" . }}
+      labels:
+        {{- include "odoo.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: init-db
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - odoo
+            - --init
+            - base
+            - --stop-after-init
+          env:
+            - name: HOST
+              value: {{ .Values.db.host }}
+            - name: POSTGRES_DB
+              value: {{ .Values.db.database }}
+            - name: POSTGRES_USER
+              value: {{ .Values.db.username }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  {{- toYaml .Values.db.passwordSecret | nindent 18 }}

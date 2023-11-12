@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+#
+# Pulls dashboards from
+# https://github.com/ceph/ceph/tree/main/monitoring/ceph-mixin
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+
+set -euo pipefail
+
+for dash in ceph-cluster.json cephfs-overview.json host-details.json hosts-overview.json osd-device-details.json osds-overview.json pool-detail.json pool-overview.json radosgw-detail.json radosgw-overview.json radosgw-sync-overview.json rbd-details.json rbd-overview.json; do
+    curl "https://raw.githubusercontent.com/ceph/ceph/main/monitoring/ceph-mixin/dashboards_out/$dash" > "$DIR/../dashboards/$dash"
+done

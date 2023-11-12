@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+usage() {
+    echo "Usage: $0 <disk-dev> <name>"
+    exit 1
+}
+
+[ "$#" -eq 2 ] || usage
+
+DEV="$1"
+ID="$2"
+
+read -rp "ARE YOU SURE??? " confirm
+
+prep_usb() {
+    secret="$(get_secret)"
+    printf "g\nn\n\n\nw\n" | sudo fdisk "$DEV"
+    echo -n "$secret" | sudo cryptsetup luksFormat \
+         --type luks2 \
+         --cipher xchacha12,aes-adiantum-plain64 \
+         --key-size 256 \
+         --hash sha512 \
+         --pbkdf-memory 256 \
+         --key-file - \
+         "${DEV}1"
+    echo -n "$secret" | sudo cryptsetup open \
+         --key-file - \
+         "${DEV}1" cryptusb
+    sudo mkfs.ext4 /dev/mapper/cryptusb
+    sudo sync
+    sudo cryptsetup close cryptusb
+
+    echo "Partition created"
+    echo "UUID Information:"
+    sudo blkid | grep "$DEV" | awk '{ print $2 }'
+}
+
+get_secret() {
+    pass Server/rpi-disk/"$ID" || gen_secret
+}
+
+gen_secret() {
+    pass generate Server/rpi-disk/"$ID" > /dev/null
+    pass Server/rpi-disk/"$ID"
+}
+
+case "$confirm" in
+    y*)
+        prep_usb ;;
+    *)
+        echo Aborting
+        exit 1
+        ;;
+esac

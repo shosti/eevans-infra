@@ -1,0 +1,75 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: minio-nfs
+spec:
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs
+  nfs:
+    path: /mnt/storage/files/minio
+    server: storage.dc.eevans.me
+  capacity:
+    storage: 100Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-nfs
+  namespace: truenas-storage
+spec:
+  volumeName: minio-nfs
+  storageClassName: nfs
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: minio
+  namespace: truenas-storage
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: minio
+      version: 12.8.14
+      sourceRef:
+        kind: HelmRepository
+        name: bitnami
+        namespace: flux-system
+      interval: 1m
+  values:
+    auth:
+      existingSecret: minio
+    metrics:
+      serviceMonitor:
+        enabled: true
+    persistence:
+      existingClaim: minio-nfs
+    podSecurityContext:
+      fsGroup: 473
+    containerSecurityContext:
+      runAsUser: 473
+    apiIngress:
+      enabled: true
+      ingressClassName: nginx
+      hostname: s3.storage.eevans.me
+      pathType: Prefix
+      tls: true
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hostname: console.s3.storage.eevans.me
+      pathType: Prefix
+      tls: true
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod

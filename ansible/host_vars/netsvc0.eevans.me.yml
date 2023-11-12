@@ -1,0 +1,11 @@
+rpi_data_volume_uuid: d0e31f21-b058-432d-8f50-e96788bdf4f8
+rpi_data_volume_tang_server:
+  url: http://tang1.eevans.me:8306
+  thp: wJtc0RKZJtN9HIVRPSS0leTOO84
+
+chrony_server_hardware_gps: true
+
+chrony_server_peers:
+  - ntp1.eevans.me
+
+ubuntu_auto_reboot_time: "09:00"

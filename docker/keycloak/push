@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+VERSION="$(cat "$DIR/VERSION")"
+
+docker buildx build . \
+       --build-arg=VERSION="$VERSION" \
+       --progress=plain \
+       -t "shosti/keycloak:$VERSION" \
+       --platform=linux/amd64 \
+       --push

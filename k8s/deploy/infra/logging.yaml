@@ -1,0 +1,176 @@
+---
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: loki-data
+  namespace: monitoring
+spec:
+  bucketName: loki-data
+  storageClassName: rook-ceph-bucket
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: promtail
+  namespace: monitoring
+spec:
+  interval: 30m
+  timeout: 30m
+  install:
+    remediation:
+      retries: 10
+  chart:
+    spec:
+      chart: promtail
+      version: 6.15.2
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: flux-system
+      interval: 1m
+  values:
+    serviceMonitor:
+      enabled: true
+    extraPorts:
+      syslog:
+        name: tcp-syslog
+        containerPort: 1514
+        service:
+          port: 1514
+          type: LoadBalancer
+          externalTrafficPolicy: Local
+          loadBalancerIP: 172.16.16.5
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: syslog.eevans.me.
+          external-dns.alpha.kubernetes.io/ttl: "5m"
+    config:
+      clients:
+        - url: https://loki.eevans.me/loki/api/v1/push
+          basic_auth:
+            username: eevansco
+            password_file: /secrets/loki-password
+      snippets:
+        extraScrapeConfigs: |
+          # Add an additional scrape config for syslog
+          - job_name: syslog
+            syslog:
+              listen_address: 0.0.0.0:1514
+              labels:
+                job: syslog
+            relabel_configs:
+              - source_labels: ["__syslog_message_hostname"]
+                target_label: hostname
+              - source_labels: ["__syslog_connection_ip_address"]
+                target_label: ip_address
+              - source_labels: ["__syslog_message_severity"]
+                target_label: severity
+              - source_labels: ["__syslog_message_facility"]
+                target_label: facility
+
+          # Add an additional scrape config for syslog
+          - job_name: journal
+            journal:
+              path: /var/log/journal
+              max_age: 12h
+              labels:
+                job: systemd-journal
+            relabel_configs:
+              - source_labels:
+                  - '__journal__systemd_unit'
+                target_label: 'unit'
+              - source_labels:
+                  - '__journal__hostname'
+                target_label: 'hostname'
+    # Mount journal directory into promtail pods
+    extraVolumes:
+      - name: journal
+        hostPath:
+          path: /var/log/journal
+      - name: secrets
+        secret:
+          secretName: promtail-secrets
+
+    extraVolumeMounts:
+      - name: journal
+        mountPath: /var/log/journal
+        readOnly: true
+      - name: secrets
+        mountPath: /secrets
+        readOnly: true
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: loki
+  namespace: monitoring
+spec:
+  interval: 30m
+  timeout: 30m
+  install:
+    remediation:
+      retries: 10
+  chart:
+    spec:
+      chart: loki
+      version: 5.26.0
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: flux-system
+      interval: 1m
+  values:
+    loki:
+      auth_enabled: false
+      storage:
+        type: s3
+        bucketNames:
+          ruler: loki-data
+          chunks: loki-data
+          admin: loki-data
+        s3:
+          endpoint: https://s3.eevans.me
+          region: us-west-1
+          s3ForcePathStyle: true
+
+    # Get rid of test/self-monitoring because it installs a bunch of garbage
+    monitoring:
+      lokiCanary:
+        enabled: false
+      selfMonitoring:
+        enabled: false
+        grafanaAgent:
+          installOperator: false
+
+    test:
+      enabled: false
+
+    tableManager:
+      retention_deletes_enabled: true
+      retention_period: 720h # 30d
+
+    singleBinary:
+      replicas: 3
+      extraEnvFrom:
+        - secretRef:
+            name: loki-data
+
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - loki.eevans.me
+      annotations:
+        nginx.ingress.kubernetes.io/enable-access-log: "false" # too noisy, also might be infinite loop?
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+        nginx.ingress.kubernetes.io/auth-type: basic
+        nginx.ingress.kubernetes.io/auth-secret: loki-basic-auth
+        nginx.ingress.kubernetes.io/auth-secret-type: auth-map
+        nginx.ingress.kubernetes.io/configuration-snippet: |
+          proxy_set_header X-Scope-OrgID $remote_user;
+      tls:
+        - secretName: loki-tls
+          hosts:
+            - loki.eevans.me
+
+    gateway:
+      enabled: false
