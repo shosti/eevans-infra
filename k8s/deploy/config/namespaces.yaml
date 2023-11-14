@@ -178,3 +178,8 @@ metadata:
   name: eevansco-static
   labels:
     eevans.me/public: "true"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: clickhouse-operator
