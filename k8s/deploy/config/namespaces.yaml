@@ -182,9 +182,4 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: clickhouse-operator
----
-apiVersion: v1
-kind: Namespace
-metadata:
   name: zookeeper
