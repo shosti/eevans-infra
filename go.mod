@@ -40,7 +40,7 @@ require (
 	github.com/shabbyrobe/gocovmerge v0.0.0-20190829150210-3e036491d500 // indirect
 	github.com/ssor/bom v0.0.0-20170718123548-6386211fdfcf // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
-	golang.org/x/net v0.14.0 // indirect
-	golang.org/x/text v0.12.0 // indirect
+	golang.org/x/net v0.17.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/tools v0.8.0 // indirect
 )
