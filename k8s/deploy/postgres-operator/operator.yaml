@@ -31,7 +31,7 @@ spec:
       version: 1.10.1
       sourceRef:
         kind: HelmRepository
-        name: postgres-operator-charts
+        name: postgres-operator-ui-charts
         namespace: flux-system
       interval: 1m
   values:
