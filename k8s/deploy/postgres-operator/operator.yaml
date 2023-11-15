@@ -37,6 +37,9 @@ spec:
   values:
     ingress:
       enabled: true
+      hosts:
+        - host: postgres.eevans.me
+          paths: ["/"]
       annotations:
         cert-manager.io/cluster-issuer: letsencrypt-prod
       ingressClassName: cilium
