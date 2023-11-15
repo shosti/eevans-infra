@@ -17,33 +17,3 @@ spec:
       interval: 1m
   values:
     enableJsonLogging: true
----
-apiVersion: helm.toolkit.fluxcd.io/v2beta1
-kind: HelmRelease
-metadata:
-  name: postgres-operator-ui
-  namespace: postgres-operator
-spec:
-  interval: 5m
-  chart:
-    spec:
-      chart: postgres-operator-ui
-      version: 1.10.1
-      sourceRef:
-        kind: HelmRepository
-        name: postgres-operator-ui-charts
-        namespace: flux-system
-      interval: 1m
-  values:
-    ingress:
-      enabled: true
-      hosts:
-        - host: postgres.eevans.me
-          paths: ["/"]
-      annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-prod
-      ingressClassName: cilium
-      tls:
-        - secretName: postgres-operator-ui-tls
-          hosts:
-            - postgres.eevans.me
