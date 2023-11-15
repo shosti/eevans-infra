@@ -178,3 +178,12 @@ metadata:
 spec:
   interval: 10m
   url: https://mariadb-operator.github.io/mariadb-operator
+---
+apiVersion: source.toolkit.fluxcd.io/v1beta1
+kind: HelmRepository
+metadata:
+  name: postgres-operator-charts
+  namespace: flux-system
+spec:
+  interval: 10m
+  url: https://opensource.zalando.com/postgres-operator/charts/postgres-operator
