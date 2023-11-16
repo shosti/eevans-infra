@@ -26,4 +26,5 @@ spec:
       interval: 1m
   values:
     enableJsonLogging: true
-    pod_environment_secret: postgres-backup
+    configKubernetes:
+      pod_environment_secret: postgres-backup
