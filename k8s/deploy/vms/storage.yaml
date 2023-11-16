@@ -123,7 +123,7 @@ apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
   name: storage-internal
-  namespace: truenas-storae
+  namespace: truenas-storage
 spec:
   endpointSelector:
     matchLabels:
