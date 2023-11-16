@@ -69,7 +69,6 @@ spec:
         namespace: flux-system
       interval: 1m
   values:
-    replicaCount: 0
     redis:
       url: redis://paperless-redis-master:6379
 

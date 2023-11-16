@@ -15,7 +15,6 @@ spec:
         namespace: flux-system
       interval: 1m
   values:
-    replicaCount: 0
     user:
       uid: 1005
       gid: 499

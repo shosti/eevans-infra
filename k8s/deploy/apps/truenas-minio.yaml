@@ -46,7 +46,6 @@ spec:
         namespace: flux-system
       interval: 1m
   values:
-    replicaCount: 0
     auth:
       existingSecret: minio
     metrics:
