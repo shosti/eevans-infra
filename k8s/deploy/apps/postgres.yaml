@@ -1,0 +1,17 @@
+---
+apiVersion: "acid.zalan.do/v1"
+kind: postgresql
+metadata:
+  name: postgres
+  namespace: postgres
+spec:
+  teamId: "eevans"
+  volume:
+    size: 30Gi
+  numberOfInstances: 2
+  users:
+    plausible: []
+  databases:
+    plausible: plausible
+  postgresql:
+    version: "15"

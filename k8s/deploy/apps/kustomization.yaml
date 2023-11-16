@@ -20,6 +20,7 @@ resources:
 - mariadb.yaml
 - mosquitto.yaml
 - paperless.yaml
+- postgres.yaml
 - terraform-state-backup.yaml
 - trivy-operator.yaml
 - truenas-minio.yaml
