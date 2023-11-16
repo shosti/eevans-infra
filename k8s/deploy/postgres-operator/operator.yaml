@@ -44,5 +44,5 @@ spec:
   values:
     enableJsonLogging: true
     configKubernetes:
-      pod_environment_secret: postgres-backup
+      # pod_environment_secret: postgres-backup
       pod_environment_configmap: postgres-env
