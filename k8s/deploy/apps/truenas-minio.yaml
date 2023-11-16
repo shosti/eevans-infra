@@ -11,7 +11,7 @@ spec:
   storageClassName: nfs
   nfs:
     path: /mnt/storage/files/minio
-    server: storage.dc.eevans.me
+    server: storage.internal.eevans.me
   capacity:
     storage: 100Gi
 ---

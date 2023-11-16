@@ -108,7 +108,7 @@ spec:
   storage:
     volume:
       nfs:
-        server: storage.dc.eevans.me
+        server: storage.internal.eevans.me
         path: /mnt/storage/files/mariadb_backup
 ---
 apiVersion: networking.k8s.io/v1

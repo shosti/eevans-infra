@@ -22,7 +22,7 @@ spec:
 
     volumes:
       media:
-        server: storage.dc.eevans.me
+        server: storage.internal.eevans.me
         path: /mnt/storage/files/media
 
     configStorage:

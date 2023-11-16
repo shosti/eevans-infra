@@ -79,19 +79,19 @@ spec:
     volumes:
       data:
         nfs:
-          server: storage.dc.eevans.me
+          server: storage.internal.eevans.me
           path: /mnt/storage/files/paperless/data
       media:
         nfs:
-          server: storage.dc.eevans.me
+          server: storage.internal.eevans.me
           path: /mnt/storage/files/paperless/media
       consume:
         nfs:
-          server: storage.dc.eevans.me
+          server: storage.internal.eevans.me
           path: /mnt/storage/files/paperless/consume
       export:
         nfs:
-          server: storage.dc.eevans.me
+          server: storage.internal.eevans.me
           path: /mnt/storage/files/paperless/export
 
     ingress:
