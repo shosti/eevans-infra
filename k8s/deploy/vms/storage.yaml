@@ -93,21 +93,21 @@ spec:
   selector:
     app.kubernetes.io/name: storage
     eevans.me/type: vm
----
-kind: Probe
-apiVersion: monitoring.coreos.com/v1
-metadata:
-  name: storage
-  namespace: truenas-storage
-spec:
-  interval: 60s
-  module: http_2xx
-  prober:
-    url: prometheus-blackbox-exporter.monitoring.svc.cluster.local:9115
-  targets:
-    staticConfig:
-      static:
-      - https://storage.dc.eevans.me/ui/
+# ---
+# kind: Probe
+# apiVersion: monitoring.coreos.com/v1
+# metadata:
+#   name: storage
+#   namespace: truenas-storage
+# spec:
+#   interval: 60s
+#   module: http_2xx
+#   prober:
+#     url: prometheus-blackbox-exporter.monitoring.svc.cluster.local:9115
+#   targets:
+#     staticConfig:
+#       static:
+#       - https://storage.dc.eevans.me/ui/
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
