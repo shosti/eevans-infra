@@ -8,6 +8,23 @@ spec:
   generateBucketName: postgres-backup
   storageClassName: rook-ceph-bucket
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-env
+  namespace: postgres-operator
+data:
+  WAL_S3_BUCKET: postgres-backup-49f0836d-8b08-4c30-ad21-26c6e23e794a
+  AWS_ENDPOINT: http://rook-ceph-rgw-object-store.rook-ceph.svc:80
+  AWS_REGION: us-east-1
+  AWS_S3_FORCE_PATH_STYLE: "true"
+  WALG_DISABLE_S3_SSE: "true"
+  BACKUP_NUM_TO_RETAIN: "5"
+  USE_WALG_BACKUP: "true"
+  USE_WALG_RESTORE: "true"
+  CLONE_USE_WALG_RESTORE: "true"
+  BACKUP_SCHEDULE: '0 10 * * *'
+---
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
@@ -28,3 +45,4 @@ spec:
     enableJsonLogging: true
     configKubernetes:
       pod_environment_secret: postgres-backup
+      pod_environment_configmap: postgres-env
