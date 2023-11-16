@@ -1,4 +1,13 @@
 ---
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: postgres-backup
+  namespace: postgres-operator
+spec:
+  generateBucketName: postgres-backup
+  storageClassName: rook-ceph-bucket
+---
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
@@ -17,3 +26,4 @@ spec:
       interval: 1m
   values:
     enableJsonLogging: true
+    pod_environment_secret: postgres-backup
