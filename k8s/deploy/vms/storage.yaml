@@ -29,10 +29,6 @@ spec:
                   port: 443
                 - name: nfsv4
                   port: 2049
-            - name: dc-net
-              acpiIndex: 3
-              sriov: {}
-              macAddress: ee:c2:b6:d1:2b:d0
             - name: user-net
               acpiIndex: 4
               sriov: {}
@@ -48,9 +44,6 @@ spec:
       networks:
         - name: default
           pod: {}
-        - name: dc-net
-          multus:
-            networkName: default/dc-net
         - name: user-net
           multus:
             networkName: default/user-net
