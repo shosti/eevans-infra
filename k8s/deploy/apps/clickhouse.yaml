@@ -18,7 +18,7 @@ spec:
   values:
     replicaCount: 3
     # See https://clickhouse.com/docs/en/guides/sre/keeper/clickhouse-keeper
-    fourlwCommandsWhitelist: [conf,cons,crst,envi,ruok,srst,srvr,stat,wchs,dirs,mntr,isro,rcvr,apiv,csnp,lgif,rqld,ydld]
+    fourlwCommandsWhitelist: '*'
     persistence:
       enabled: true
       size: 1Gi
