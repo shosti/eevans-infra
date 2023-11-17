@@ -8,6 +8,14 @@ spec:
   generateBucketName: postgres-backup
   storageClassName: rook-ceph-bucket
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-env
+  namespace: postgres-operator
+values:
+  ALLOW_NOSSL: 'true'
+---
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
@@ -27,4 +35,5 @@ spec:
   values:
     enableJsonLogging: true
     configKubernetes:
+      pod_environment_configmap: postgres-env
       pod_environment_secret: postgres-env
