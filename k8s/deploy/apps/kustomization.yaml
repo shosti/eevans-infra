@@ -4,6 +4,7 @@ resources:
 - apcupsmon.yaml
 - awx.yaml
 - blogmailer.yaml
+- clickhouse.yaml
 - clickhouse-operator.yaml
 - crdb.yaml
 - dnsupdate.yaml
