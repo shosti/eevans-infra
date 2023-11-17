@@ -60,9 +60,12 @@ spec:
               storage: 30Gi
     podTemplates:
       - name: default
+        metadata:
+          labels:
+            app.kubernetes.io/name: clickhouse
         spec:
           containers:
-            - name: clickhouse-pod
+            - name: clickhouse
               image: clickhouse/clickhouse-server:23.9.5.29-alpine
     serviceTemplates:
       - name: default
