@@ -1,3 +1,7 @@
+# This operator seems unable to make clickhouse installations outside of the
+# namespace it's deployed in, which sort of defeats the purpose? But for now I
+# only need 1 installation so it should be OK.
+#
 # See https://github.com/Altinity/clickhouse-operator/blob/master/docs/quick_start.md
 #
 # Template Parameters:
@@ -2795,7 +2799,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: clickhouse-operator
-  namespace: plausible
+  namespace: clickhouse
   labels:
     clickhouse.altinity.com/chop: 0.22.0
 ---
@@ -2812,7 +2816,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: clickhouse-operator-clickhouse-operator
-  #namespace: plausible
+  #namespace: clickhouse
   labels:
     clickhouse.altinity.com/chop: 0.22.0
 rules:
@@ -2970,7 +2974,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: clickhouse-operator-clickhouse-operator
-  #namespace: plausible
+  #namespace: clickhouse
   labels:
     clickhouse.altinity.com/chop: 0.22.0
 roleRef:
@@ -2980,7 +2984,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: clickhouse-operator
-  namespace: plausible
+  namespace: clickhouse
 ---
 # Template Parameters:
 #
@@ -2992,7 +2996,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: etc-clickhouse-operator-files
-  namespace: plausible
+  namespace: clickhouse
   labels:
     clickhouse.altinity.com/chop: 0.22.0
     app: clickhouse-operator
@@ -3146,7 +3150,7 @@ data:
         #   2. password
         secret:
           # Empty `namespace` means that k8s secret would be looked in the same namespace where operator's pod is running.
-          namespace: plausible
+          namespace: clickhouse
           # Empty `name` means no k8s Secret would be looked for
           name: "clickhouse-operator"
         # Port where to connect to ClickHouse instances to
@@ -3347,7 +3351,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: etc-clickhouse-operator-confd-files
-  namespace: plausible
+  namespace: clickhouse
   labels:
     clickhouse.altinity.com/chop: 0.22.0
     app: clickhouse-operator
@@ -3363,7 +3367,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: etc-clickhouse-operator-configd-files
-  namespace: plausible
+  namespace: clickhouse
   labels:
     clickhouse.altinity.com/chop: 0.22.0
     app: clickhouse-operator
@@ -3462,7 +3466,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: etc-clickhouse-operator-templatesd-files
-  namespace: plausible
+  namespace: clickhouse
   labels:
     clickhouse.altinity.com/chop: 0.22.0
     app: clickhouse-operator
@@ -3562,7 +3566,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: etc-clickhouse-operator-usersd-files
-  namespace: plausible
+  namespace: clickhouse
   labels:
     clickhouse.altinity.com/chop: 0.22.0
     app: clickhouse-operator
@@ -3625,7 +3629,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: clickhouse-operator
-  namespace: plausible
+  namespace: clickhouse
   labels:
     clickhouse.altinity.com/chop: 0.22.0
     app: clickhouse-operator
@@ -3649,7 +3653,7 @@ kind: Deployment
 apiVersion: apps/v1
 metadata:
   name: clickhouse-operator
-  namespace: plausible
+  namespace: clickhouse
   labels:
     clickhouse.altinity.com/chop: 0.22.0
     app: clickhouse-operator
@@ -3710,7 +3714,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-            # metadata.namespace: plausible
+            # metadata.namespace: clickhouse
             - name: OPERATOR_POD_NAMESPACE
               valueFrom:
                 fieldRef:
@@ -3778,7 +3782,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-            # metadata.namespace: plausible
+            # metadata.namespace: clickhouse
             - name: OPERATOR_POD_NAMESPACE
               valueFrom:
                 fieldRef:
@@ -3834,7 +3838,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: clickhouse-operator-metrics
-  namespace: plausible
+  namespace: clickhouse
   labels:
     clickhouse.altinity.com/chop: 0.22.0
     app: clickhouse-operator
