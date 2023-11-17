@@ -13,7 +13,7 @@ kind: ConfigMap
 metadata:
   name: postgres-env
   namespace: postgres-operator
-values:
+data:
   ALLOW_NOSSL: 'true'
 ---
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
