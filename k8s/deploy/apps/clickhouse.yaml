@@ -26,12 +26,45 @@ spec:
       serviceMonitor:
         enabled: true
 ---
-# apiVersion: clickhouse.altinity.com/v1
-# kind: ClickHouseInstallation
-# metadata:
-#   name: clickhouse
-#   namespace: clickhouse
-# spec:
-#   configuration:
-#     clusters:
-#       - name: clickhouse
+apiVersion: clickhouse.altinity.com/v1
+kind: ClickHouseInstallation
+metadata:
+  name: clickhouse
+  namespace: clickhouse
+spec:
+  configuration:
+    zookeeper:
+      nodes:
+      - host: clickhouse-coordinator-zookeeper-0.clickhouse-coordinator-zookeeper-headless
+      - host: clickhouse-coordinator-zookeeper-1.clickhouse-coordinator-zookeeper-headless
+      - host: clickhouse-coordinator-zookeeper-2.clickhouse-coordinator-zookeeper-headless
+    clusters:
+      - name: default
+        layout:
+          shardsCount: 1
+          replicasCount: 2
+  templates:
+    volumeClaimTemplates:
+      - name: default
+        spec:
+          storageClassName: local-drive
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 30Gi
+    podTemplates:
+      - name: default
+        spec:
+          containers:
+            - name: clickhouse-pod
+              image: clickhouse/clickhouse-server:23.9.5.29-alpine
+    serviceTemplates:
+      - name: default
+        spec:
+          ports:
+            - name: http
+              port: 8123
+            - name: tcp
+              port: 9000
+          type: ClusterIP
