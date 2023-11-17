@@ -27,4 +27,3 @@ resources:
 - truenas-minio.yaml
 - unifi.yaml
 - wraft.yaml
-- zookeeper.yaml

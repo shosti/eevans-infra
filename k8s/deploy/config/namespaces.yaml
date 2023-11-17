@@ -182,11 +182,6 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: zookeeper
----
-apiVersion: v1
-kind: Namespace
-metadata:
   name: postgres-operator
 ---
 apiVersion: v1
