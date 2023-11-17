@@ -40,6 +40,11 @@ spec:
       - host: clickhouse-coordinator-zookeeper-2.clickhouse-coordinator-zookeeper-headless
     clusters:
       - name: default
+        templates:
+          clusterServiceTemplate: default
+          podTemplate: default
+          serviceTemplate: default
+          dataVolumeClaimTemplate: default
         layout:
           shardsCount: 1
           replicasCount: 2
