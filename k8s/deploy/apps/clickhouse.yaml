@@ -49,3 +49,36 @@ spec:
             - name: tcp
               port: 9000
           type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: clickhouse
+  namespace: clickhouse
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: clickhouse
+  policyTypes:
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              eevans.me/clickhouse-access: "true"
+      ports:
+        - port: 8123
+        - port: 9000
+    - from:
+        - podSelector: {}
+  egress:
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+    - to:
+        - podSelector: {}
