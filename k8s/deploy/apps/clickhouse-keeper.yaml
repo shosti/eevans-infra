@@ -9,7 +9,7 @@ metadata:
 spec:
   ports:
     - port: 7000
-      name: prometheus
+      name: metrics
   selector:
     app.kubernetes.io/name: clickhouse-keeper
 ---
