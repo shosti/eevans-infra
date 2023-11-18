@@ -5,6 +5,7 @@ resources:
 - awx.yaml
 - blogmailer.yaml
 - clickhouse.yaml
+- clickhouse-keeper.yaml
 - clickhouse-operator.yaml
 - crdb.yaml
 - dnsupdate.yaml
