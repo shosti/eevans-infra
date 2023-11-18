@@ -307,116 +307,116 @@ data:
       fi
     fi
 
----
-# Setup ClickHouse Keeper StatefulSet
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  # nodes would be named as clickhouse-keeper-0, clickhouse-keeper-1, clickhouse-keeper-2
-  name: clickhouse-keeper
-  namespace: clickhouse
-  labels:
-    app.kubernetes.io/name: clickhouse-keeper
-spec:
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: clickhouse-keeper
-  serviceName: clickhouse-keeper-headless
-  replicas: 3
-  podManagementPolicy: OrderedReady
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: clickhouse-keeper
-        app.kuberentes.io/component: node
-      annotations:
-        prometheus.io/port: '7000'
-        prometheus.io/scrape: 'true'
-    spec:
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: "app.kubernetes.io/name"
-                    operator: In
-                    values:
-                      - clickhouse-keeper
-              topologyKey: "kubernetes.io/hostname"
-      volumes:
-        - name: clickhouse-keeper-settings
-          configMap:
-            name: clickhouse-keeper-settings
-            items:
-              - key: keeper_config.xml
-                path: keeper_config.xml
-        - name: clickhouse-keeper-scripts
-          configMap:
-            name: clickhouse-keeper-scripts
-            defaultMode: 0755
-      containers:
-        - name: clickhouse-keeper
-          imagePullPolicy: IfNotPresent
-          image: "clickhouse/clickhouse-keeper:23.9.5.29-alpine"
-          resources:
-            requests:
-              memory: "256M"
-              cpu: "1"
-            limits:
-              memory: "4Gi"
-              cpu: "2"
-          volumeMounts:
-            - name: clickhouse-keeper-settings
-              mountPath: /etc/clickhouse-keeper/
-            - name: clickhouse-keeper-datadir-volume
-              mountPath: /var/lib/clickhouse-keeper
-            - name: clickhouse-keeper-scripts
-              mountPath: /conf/
-          command:
-            - /conf/keeperStart.sh
-          lifecycle:
-            preStop:
-              exec:
-                command:
-                  - /conf/keeperTeardown.sh
-          livenessProbe:
-            exec:
-              command:
-                - /conf/keeperLive.sh
-            failureThreshold: 3
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 10
-          readinessProbe:
-            exec:
-              command:
-                - /conf/keeperReady.sh
-            failureThreshold: 3
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 10
-          ports:
-            - containerPort: 2181
-              name: client
-              protocol: TCP
-            - containerPort: 9444
-              name: quorum
-              protocol: TCP
-            - containerPort: 7000
-              name: metrics
-              protocol: TCP
-      restartPolicy: Always
-      schedulerName: default-scheduler
-      terminationGracePeriodSeconds: 40
-  volumeClaimTemplates:
-    - metadata:
-        name: clickhouse-keeper-datadir-volume
-      spec:
-        storageClassName: local-drive
-        accessModes:
-          - ReadWriteOnce
-        resources:
-          requests:
-            storage: 5Gi
+# ---
+# # Setup ClickHouse Keeper StatefulSet
+# apiVersion: apps/v1
+# kind: StatefulSet
+# metadata:
+#   # nodes would be named as clickhouse-keeper-0, clickhouse-keeper-1, clickhouse-keeper-2
+#   name: clickhouse-keeper
+#   namespace: clickhouse
+#   labels:
+#     app.kubernetes.io/name: clickhouse-keeper
+# spec:
+#   selector:
+#     matchLabels:
+#       app.kubernetes.io/name: clickhouse-keeper
+#   serviceName: clickhouse-keeper-headless
+#   replicas: 3
+#   podManagementPolicy: OrderedReady
+#   template:
+#     metadata:
+#       labels:
+#         app.kubernetes.io/name: clickhouse-keeper
+#         app.kuberentes.io/component: node
+#       annotations:
+#         prometheus.io/port: '7000'
+#         prometheus.io/scrape: 'true'
+#     spec:
+#       affinity:
+#         podAntiAffinity:
+#           requiredDuringSchedulingIgnoredDuringExecution:
+#             - labelSelector:
+#                 matchExpressions:
+#                   - key: "app.kubernetes.io/name"
+#                     operator: In
+#                     values:
+#                       - clickhouse-keeper
+#               topologyKey: "kubernetes.io/hostname"
+#       volumes:
+#         - name: clickhouse-keeper-settings
+#           configMap:
+#             name: clickhouse-keeper-settings
+#             items:
+#               - key: keeper_config.xml
+#                 path: keeper_config.xml
+#         - name: clickhouse-keeper-scripts
+#           configMap:
+#             name: clickhouse-keeper-scripts
+#             defaultMode: 0755
+#       containers:
+#         - name: clickhouse-keeper
+#           imagePullPolicy: IfNotPresent
+#           image: "clickhouse/clickhouse-keeper:23.9.5.29-alpine"
+#           resources:
+#             requests:
+#               memory: "256M"
+#               cpu: "1"
+#             limits:
+#               memory: "4Gi"
+#               cpu: "2"
+#           volumeMounts:
+#             - name: clickhouse-keeper-settings
+#               mountPath: /etc/clickhouse-keeper/
+#             - name: clickhouse-keeper-datadir-volume
+#               mountPath: /var/lib/clickhouse-keeper
+#             - name: clickhouse-keeper-scripts
+#               mountPath: /conf/
+#           command:
+#             - /conf/keeperStart.sh
+#           lifecycle:
+#             preStop:
+#               exec:
+#                 command:
+#                   - /conf/keeperTeardown.sh
+#           livenessProbe:
+#             exec:
+#               command:
+#                 - /conf/keeperLive.sh
+#             failureThreshold: 3
+#             initialDelaySeconds: 10
+#             periodSeconds: 10
+#             successThreshold: 1
+#             timeoutSeconds: 10
+#           readinessProbe:
+#             exec:
+#               command:
+#                 - /conf/keeperReady.sh
+#             failureThreshold: 3
+#             initialDelaySeconds: 10
+#             periodSeconds: 10
+#             successThreshold: 1
+#             timeoutSeconds: 10
+#           ports:
+#             - containerPort: 2181
+#               name: client
+#               protocol: TCP
+#             - containerPort: 9444
+#               name: quorum
+#               protocol: TCP
+#             - containerPort: 7000
+#               name: metrics
+#               protocol: TCP
+#       restartPolicy: Always
+#       schedulerName: default-scheduler
+#       terminationGracePeriodSeconds: 40
+#   volumeClaimTemplates:
+#     - metadata:
+#         name: clickhouse-keeper-datadir-volume
+#       spec:
+#         storageClassName: local-drive
+#         accessModes:
+#           - ReadWriteOnce
+#         resources:
+#           requests:
+#             storage: 5Gi
