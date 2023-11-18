@@ -1,51 +1,51 @@
-# ---
-# apiVersion: clickhouse.altinity.com/v1
-# kind: ClickHouseInstallation
-# metadata:
-#   name: clickhouse
-#   namespace: clickhouse
-# spec:
-#   configuration:
-#     zookeeper:
-#       nodes:
-#       - host: clickhouse-coordinator-zookeeper-0.clickhouse-coordinator-zookeeper-headless
-#       - host: clickhouse-coordinator-zookeeper-1.clickhouse-coordinator-zookeeper-headless
-#       - host: clickhouse-coordinator-zookeeper-2.clickhouse-coordinator-zookeeper-headless
-#     clusters:
-#       - name: default
-#         templates:
-#           clusterServiceTemplate: default
-#           podTemplate: default
-#           serviceTemplate: default
-#           dataVolumeClaimTemplate: default
-#         layout:
-#           shardsCount: 1
-#           replicasCount: 2
-#   templates:
-#     volumeClaimTemplates:
-#       - name: default
-#         spec:
-#           storageClassName: local-drive
-#           accessModes:
-#             - ReadWriteOnce
-#           resources:
-#             requests:
-#               storage: 30Gi
-#     podTemplates:
-#       - name: default
-#         metadata:
-#           labels:
-#             app.kubernetes.io/name: clickhouse
-#         spec:
-#           containers:
-#             - name: clickhouse
-#               image: clickhouse/clickhouse-server:23.9.5.29-alpine
-#     serviceTemplates:
-#       - name: default
-#         spec:
-#           ports:
-#             - name: http
-#               port: 8123
-#             - name: tcp
-#               port: 9000
-#           type: ClusterIP
+---
+apiVersion: clickhouse.altinity.com/v1
+kind: ClickHouseInstallation
+metadata:
+  name: clickhouse
+  namespace: clickhouse
+spec:
+  configuration:
+    zookeeper:
+      nodes:
+      - host: clickhouse-keeper-0.clickhouse-keeper.clickhouse.svc.cluster.local
+      - host: clickhouse-keeper-1.clickhouse-keeper.clickhouse.svc.cluster.local
+      - host: clickhouse-keeper-2.clickhouse-keeper.clickhouse.svc.cluster.local
+    clusters:
+      - name: default
+        templates:
+          clusterServiceTemplate: default
+          podTemplate: default
+          serviceTemplate: default
+          dataVolumeClaimTemplate: default
+        layout:
+          shardsCount: 1
+          replicasCount: 2
+  templates:
+    volumeClaimTemplates:
+      - name: default
+        spec:
+          storageClassName: local-drive
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 30Gi
+    podTemplates:
+      - name: default
+        metadata:
+          labels:
+            app.kubernetes.io/name: clickhouse
+        spec:
+          containers:
+            - name: clickhouse
+              image: clickhouse/clickhouse-server:23.9.5.29-alpine
+    serviceTemplates:
+      - name: default
+        spec:
+          ports:
+            - name: http
+              port: 8123
+            - name: tcp
+              port: 9000
+          type: ClusterIP
