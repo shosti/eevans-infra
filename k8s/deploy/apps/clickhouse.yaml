@@ -5,6 +5,9 @@ metadata:
   name: clickhouse
   namespace: clickhouse
 spec:
+  defaults:
+    templates:
+      serviceTemplate: default
   configuration:
     zookeeper:
       nodes:
@@ -16,7 +19,6 @@ spec:
         templates:
           clusterServiceTemplate: default
           podTemplate: default
-          serviceTemplate: default
           dataVolumeClaimTemplate: default
         layout:
           shardsCount: 1
