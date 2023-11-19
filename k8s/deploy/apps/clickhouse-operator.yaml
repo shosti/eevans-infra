@@ -3860,9 +3860,9 @@ metadata:
     app: clickhouse-operator
 spec:
   endpoints:
-    - port: 8888
+    - port: clickhouse-metrics
       path: /metrics
-    - port: 9999
+    - port: operator-metrics
       path: /metrics
   selector:
     matchLabels:
