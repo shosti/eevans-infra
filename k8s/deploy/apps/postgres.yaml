@@ -59,6 +59,10 @@ spec:
     - from:
         - namespaceSelector:
             matchLabels:
+              kubernetes.io/metadata.name: postgres-operator
+    - from:
+        - namespaceSelector:
+            matchLabels:
               kubernetes.io/metadata.name: monitoring
       ports:
         - port: 9187
