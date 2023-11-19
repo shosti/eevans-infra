@@ -3850,3 +3850,20 @@ spec:
       name: operator-metrics
   selector:
     app: clickhouse-operator
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: clickhouse-operator
+  namespace: clickhouse
+  labels:
+    app: clickhouse-operator
+spec:
+  endpoints:
+    - port: 8888
+      path: /metrics
+    - port: 9999
+      path: /metrics
+  selector:
+    matchLabels:
+      app: clickhouse-operator
