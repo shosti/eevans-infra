@@ -193,3 +193,11 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: clickhouse
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: plausible
+  labels:
+    eevans.me/clickhouse-access: 'true'
+    eevans.me/postgres-access: 'true'

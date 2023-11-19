@@ -9,6 +9,10 @@ spec:
     templates:
       serviceTemplate: default
   configuration:
+    users:
+      plausible/k8s_secret_password: users/plausible
+      plausible/networks/ip:
+        - 0.0.0.0/0
     zookeeper:
       nodes:
       - host: clickhouse-keeper-0.clickhouse-keeper.clickhouse.svc.cluster.local
