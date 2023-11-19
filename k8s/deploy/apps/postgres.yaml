@@ -24,6 +24,18 @@ spec:
     limits:
       cpu: '4'
       memory: 1Gi
+  sidecars:
+    - name: exporter
+      image: quay.io/prometheuscommunity/postgres-exporter:v0.15.0
+      ports:
+        - name: metrics
+          containerPort: 9187
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256M
+        limits:
+          memory: 256M
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -44,6 +56,12 @@ spec:
               eevans.me/postgres-access: "true"
       ports:
         - port: 5432
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 9187
   egress:
     - to:
         - podSelector: {}
