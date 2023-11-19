@@ -57,7 +57,7 @@ spec:
               memory: 768Mi
           securityContext:
             runAsNonRoot: true
-            runAsUser: 9999
+            runAsUser: 1000
             capabilities:
               drop:
                 - ALL
@@ -82,7 +82,7 @@ spec:
               memory: 768Mi
           securityContext:
             runAsNonRoot: true
-            runAsUser: 9999
+            runAsUser: 1000
             capabilities:
               drop:
                 - ALL
@@ -116,7 +116,7 @@ spec:
               memory: 768Mi
           securityContext:
             runAsNonRoot: true
-            runAsUser: 9999
+            runAsUser: 1000
             capabilities:
               drop:
                 - ALL
