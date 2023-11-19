@@ -162,3 +162,50 @@ spec:
     matchLabels:
       app.kubernetes.io/name: plausible
   minAvailable: 1
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: plausible
+  namespace: plausible
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: plausible
+  ingress:
+    - fromEntities:
+        - cluster
+      toPorts:
+        - ports:
+            - port: "8000"
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: postgres
+      toPorts:
+        - ports:
+            - port: "5432"
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: clickhouse
+      toPorts:
+        - ports:
+            - port: "8123"
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+          rules:
+            dns:
+              - matchPattern: "*"
+    - toEndpoints:
+        - {}
+    - toFQDNs:
+        - matchName: email-smtp.us-west-2.amazonaws.com
+      toPorts:
+        - ports:
+            - port: "465"
