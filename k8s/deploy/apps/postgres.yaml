@@ -55,10 +55,14 @@ spec:
             - port: "5432"
     - fromEndpoints:
         - matchLabels:
-            io.kubernetes.pod.namespace.labels.foo: bar
+            io.kubernetes.pod.namespace: postgres-operator
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+      toPorts:
+        - ports:
+            - port: "9187"
   egress:
-    - toEndpoints:
-        - {}
     - toEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: kube-system
@@ -76,5 +80,7 @@ spec:
       toPorts:
         - ports:
             - port: "9000"
+    - toEndpoints:
+        - {}
     - toEntities:
-      - kube-apiserver
+        - kube-apiserver
