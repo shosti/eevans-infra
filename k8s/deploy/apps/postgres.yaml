@@ -72,7 +72,7 @@ spec:
               - matchPattern: "*"
     - toEndpoints:
         - matchLabels:
-            io.kubernetes.pod.namespace: treunas-storage
+            io.kubernetes.pod.namespace: truenas-storage
       toPorts:
         - ports:
             - port: "9000"
