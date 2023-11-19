@@ -99,8 +99,11 @@ spec:
             seccompProfile:
               type: RuntimeDefault
           resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
             limits:
-              cpu: 500m
+              cpu: 750m
               memory: 256Mi
       containers:
         - image: listmonk/listmonk:v2.5.1
