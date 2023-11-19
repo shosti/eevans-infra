@@ -48,7 +48,7 @@ spec:
               image: clickhouse/clickhouse-server:23.9.5.29-alpine
               resources:
                 requests:
-                  cpu: '1'
+                  cpu: 750m
                   memory: 1Gi
                 limits:
                   memory: 1Gi
