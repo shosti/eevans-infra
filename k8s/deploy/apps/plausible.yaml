@@ -58,7 +58,7 @@ spec:
             - /entrypoint.sh db migrate
           env:
             - name: BASE_URL
-              value: https://plausible.eevans.me
+              value: https://plausible.eevans.co
           envFrom:
             - secretRef:
                 name: plausible
