@@ -74,6 +74,15 @@ spec:
           envFrom:
             - secretRef:
                 name: plausible
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            failureThreshold: 6
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
