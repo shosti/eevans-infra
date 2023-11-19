@@ -37,3 +37,5 @@ spec:
     configKubernetes:
       pod_environment_configmap: postgres-env
       pod_environment_secret: postgres-env
+      inherited_labels:
+        - app.kubernetes.io/name
