@@ -52,9 +52,11 @@ spec:
             - secretRef:
                 name: plausible
           resources:
+            requests:
+              cpu: '1'
+              memory: 1Gi
             limits:
-              cpu: 750m
-              memory: 768Mi
+              memory: 1Gi
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000

@@ -46,6 +46,12 @@ spec:
           containers:
             - name: clickhouse
               image: clickhouse/clickhouse-server:23.9.5.29-alpine
+              resources:
+                requests:
+                  cpu: '1'
+                  memory: 1Gi
+                limits:
+                  memory: 1Gi
     serviceTemplates:
       - name: default
         spec:

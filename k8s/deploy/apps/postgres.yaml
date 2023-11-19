@@ -15,3 +15,9 @@ spec:
     plausible: plausible
   postgresql:
     version: "15"
+  resources:
+    requests:
+      cpu: '1'
+      memory: 1Gi
+    limits:
+      memory: 1Gi
