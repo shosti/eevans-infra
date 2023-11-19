@@ -82,6 +82,7 @@ spec:
               memory: 768Mi
           securityContext:
             runAsNonRoot: true
+            runAsUser: 9999
             capabilities:
               drop:
                 - ALL
