@@ -46,7 +46,7 @@ spec:
             - -c
             - |
               set -euo pipefail
-              echo "CREATE DATABASE IF NOT EXISTS plausible_events_db" | curl "$(echo "$CLICKHOUSE_DATABASE_URL" | sed 's|/plausible_events_db||')" --data-binary @-
+              echo "CREATE DATABASE IF NOT EXISTS plausible_events_db" | curl --fail "$(echo "$CLICKHOUSE_DATABASE_URL" | sed 's|/plausible_events_db||')" --data-binary @-
           envFrom:
             - secretRef:
                 name: plausible
