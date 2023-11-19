@@ -58,7 +58,6 @@ spec:
     - to:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: rook-ceph
+              kubernetes.io/metadata.name: truenas-storage
       ports:
-        - port: 443
-        - port: 80
+        - port: 9000
