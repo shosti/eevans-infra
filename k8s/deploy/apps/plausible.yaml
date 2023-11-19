@@ -32,6 +32,7 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: plausible
+  replicas: 2
   template:
     metadata:
       labels:
@@ -50,6 +51,19 @@ spec:
           envFrom:
             - secretRef:
                 name: plausible
+          resources:
+            limits:
+              cpu: 750m
+              memory: 768Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 9999
+            capabilities:
+              drop:
+                - ALL
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
         - name: init-db
           image: plausible/analytics:v2.0.0
           command:
@@ -62,6 +76,18 @@ spec:
           envFrom:
             - secretRef:
                 name: plausible
+          resources:
+            limits:
+              cpu: 750m
+              memory: 768Mi
+          securityContext:
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
       containers:
         - name: plausible
           image: plausible/analytics:v2.0.0
@@ -83,6 +109,20 @@ spec:
               path: /api/health
               port: http
             failureThreshold: 6
+          resources:
+            limits:
+              cpu: 750m
+              memory: 768Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 9999
+            capabilities:
+              drop:
+                - ALL
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -110,3 +150,14 @@ spec:
             name: plausible
             port:
               name: http
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: plausible
+  namespace: plausible
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: plausible
+  minAvailable: 1
