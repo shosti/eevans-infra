@@ -201,4 +201,3 @@ metadata:
   labels:
     pod-security.kubernetes.io/enforce: restricted
     eevans.me/clickhouse-access: 'true'
-    eevans.me/postgres-access: 'true'

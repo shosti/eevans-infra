@@ -49,7 +49,10 @@ spec:
         - {}
     - fromEndpoints:
         - matchLabels:
-            io.cilium.k8s.namespace.labels.eevans.me/postgres-access: "true"
+            eevans.me/postgres-access: "true"
+          matchExpressions:
+            - key: io.kubernetes.pod.namespace
+              operator: Exists
       toPorts:
         - ports:
             - port: "5432"
