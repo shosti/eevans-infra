@@ -186,6 +186,7 @@ spec:
         - matchName: data.iana.org
         - matchName: icons.duckduckgo.com
         - matchName: www.googleapis.com
+        - matchName: download.maxmind.com
       toPorts:
         - ports:
             - port: "443"
