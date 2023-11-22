@@ -38,6 +38,7 @@ spec:
       labels:
         app.kubernetes.io/name: plausible
         eevans.me/postgres-access: 'true'
+        eevans.me/public: 'true'
     spec:
       serviceAccountName: plausible
       initContainers:
@@ -194,6 +195,8 @@ spec:
   parentRefs:
   - name: ingress-public
     namespace: ingress-public
+  labels:
+    app.kubernetes.io/name: plausible
   hostnames:
     - plausible.eevans.co
   rules:
