@@ -40,5 +40,6 @@ spec:
       # The default configuration set it so the master can never be disrupted,
       # see https://github.com/zalando/postgres-operator/pull/384
       enable_pod_disruption_budget: false
+      share_pgsocket_with_sidecars: true
       inherited_labels:
         - app.kubernetes.io/name

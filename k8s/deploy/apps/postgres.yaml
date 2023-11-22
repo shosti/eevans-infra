@@ -30,12 +30,12 @@ spec:
       ports:
         - name: metrics
           containerPort: 9187
-      command:
-        - /bin/sh
-        - -c
-        - |
-          export DATA_SOURCE_NAME="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:5432/postgres?sslmode=disable"
-          exec /bin/postgres_exporter
+      volumeMounts:
+        - mountPath: /var/run
+          name: postgresql-run
+      env:
+        - name: DATA_SOURCE_NAME
+          value: postgresql:///postgres?host=/var/run/postgresql
       resources:
         requests:
           cpu: 100m
