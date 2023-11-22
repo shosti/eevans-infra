@@ -25,6 +25,7 @@ resources:
 - paperless.yaml
 - plausible.yaml
 - postgres.yaml
+- postgres-exporter.yaml
 - terraform-state-backup.yaml
 - trivy-operator.yaml
 - truenas-minio.yaml

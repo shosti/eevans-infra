@@ -1,0 +1,72 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: postgres-exporter
+  namespace: postgres
+  labels:
+    app.kubernetes.io/name: postgres-exporter
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-exporter
+  namespace: postgres
+  labels:
+    app.kubernetes.io/name: postgres-exporter
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres-exporter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: postgres-exporter
+        eevans.me/postgres-access: 'true'
+    spec:
+      serviceAccountName: plausible
+      initContainers:
+        - name: create-config
+          image: shosti/toolbox:v1
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+              cat <<EOS > /config/postgres_exporter.yml
+              auth_modules:
+                postgres:
+                  type: userpass
+                  userpass:
+                    username: ${PG_USER}
+                    password: ${PG_PASS}
+              EOS
+              chmod 0400 /config/postgres_exporter.yml
+          env:
+            - name: PG_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres.postgres.credentials.postgresql.acid.zalan.do
+                  key: username
+            - name: PG_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: postgres.postgres.credentials.postgresql.acid.zalan.do
+                  key: password
+          securityContext:
+            runAsUser: 65534
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      containers:
+        - name: exporter
+          image: quay.io/prometheuscommunity/postgres-exporter:v0.15.0
+          args: [--config.file=/config/postgres_exporter.yml]
+          securityContext:
+            runAsUser: 65534
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      volumes:
+        - name: config
+          emptyDir: {}
