@@ -218,12 +218,12 @@ kind: HTTPRoute
 metadata:
   name: plausible-public
   namespace: plausible
+  labels:
+    app.kubernetes.io/name: plausible
 spec:
   parentRefs:
   - name: ingress-public
     namespace: ingress-public
-  labels:
-    app.kubernetes.io/name: plausible
   hostnames:
     - plausible.eevans.co
   rules:
