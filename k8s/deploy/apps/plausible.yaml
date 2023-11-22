@@ -177,7 +177,7 @@ spec:
       app.kubernetes.io/name: plausible
   ingress:
     - fromEntities:
-        - cluster
+        - world
       toPorts:
         - ports:
             - port: "8000"
