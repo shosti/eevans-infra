@@ -212,3 +212,8 @@ spec:
       toPorts:
         - ports:
             - port: "465"
+    - toFQDNs:
+        - matchName: data.iana.org
+      toPorts:
+        - ports:
+            - port: "443"
