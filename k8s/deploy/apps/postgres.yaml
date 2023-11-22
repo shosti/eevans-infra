@@ -102,6 +102,8 @@ spec:
     - name: metrics
       port: 9187
       targetPort: 9187
+  selector:
+    app.kubernetes.io/name: postgres
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
