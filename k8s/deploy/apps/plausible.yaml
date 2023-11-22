@@ -175,12 +175,6 @@ spec:
   endpointSelector:
     matchLabels:
       app.kubernetes.io/name: plausible
-  ingress:
-    - fromEntities:
-        - world
-      toPorts:
-        - ports:
-            - port: "8000"
   egress:
     - toEndpoints:
         - matchLabels:
