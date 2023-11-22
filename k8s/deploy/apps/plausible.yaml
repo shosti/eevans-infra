@@ -182,6 +182,7 @@ spec:
             - port: "465"
     - toFQDNs:
         - matchName: data.iana.org
+        - matchName: icons.duckduckgo.com
       toPorts:
         - ports:
             - port: "443"
