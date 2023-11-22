@@ -183,6 +183,7 @@ spec:
     - toFQDNs:
         - matchName: data.iana.org
         - matchName: icons.duckduckgo.com
+        - matchName: www.googleapis.com
       toPorts:
         - ports:
             - port: "443"
