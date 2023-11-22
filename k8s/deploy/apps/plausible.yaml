@@ -39,6 +39,8 @@ spec:
         app.kubernetes.io/name: plausible
         eevans.me/postgres-access: 'true'
         eevans.me/public: 'true'
+      annotations:
+        eevans.me/secret-ref: 0b528
     spec:
       serviceAccountName: plausible
       initContainers:
