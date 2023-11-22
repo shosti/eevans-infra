@@ -24,7 +24,7 @@ spec:
         app.kubernetes.io/name: postgres-exporter
         eevans.me/postgres-access: 'true'
     spec:
-      serviceAccountName: plausible
+      serviceAccountName: postgres-exporter
       initContainers:
         - name: create-config
           image: shosti/toolbox:v1
