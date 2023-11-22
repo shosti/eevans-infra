@@ -245,3 +245,18 @@ spec:
     backendRefs:
     - name: plausible
       port: 8000
+---
+kind: Probe
+apiVersion: monitoring.coreos.com/v1
+metadata:
+  name: plausible
+  namespace: plausible
+spec:
+  interval: 10s
+  module: http_2xx
+  prober:
+    url: prometheus-blackbox-exporter.monitoring.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      static:
+      - https://plausible.eevans.co/api/health
