@@ -24,24 +24,6 @@ spec:
     limits:
       cpu: '4'
       memory: 1Gi
-  sidecars:
-    - name: exporter
-      image: quay.io/prometheuscommunity/postgres-exporter:v0.15.0
-      ports:
-        - name: metrics
-          containerPort: 9187
-      volumeMounts:
-        - mountPath: /var/run
-          name: postgresql-run
-      env:
-        - name: DATA_SOURCE_NAME
-          value: postgresql:///postgres?host=/var/run/postgresql
-      resources:
-        requests:
-          cpu: 100m
-          memory: 256M
-        limits:
-          memory: 256M
 ---
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
