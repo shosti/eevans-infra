@@ -95,7 +95,7 @@ metadata:
   namespace: postgres
   labels:
     app.kubernetes.io/name: postgres
-    app.kubernetes.io/copmponent: metrics
+    app.kubernetes.io/component: metrics
 spec:
   type: ClusterIP
   ports:
@@ -117,4 +117,4 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: postgres
-      app.kubernetes.io/copmponent: metrics
+      app.kubernetes.io/component: metrics
