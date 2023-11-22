@@ -70,3 +70,41 @@ spec:
       volumes:
         - name: config
           emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-exporter
+  namespace: postgres
+  labels:
+    app.kubernetes.io/name: postgres-exporter
+spec:
+  type: ClusterIP
+  ports:
+    - name: metrics
+      port: 9187
+      targetPort: 9187
+  selector:
+    app.kubernetes.io/name: postgres-exporter
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: postgres
+  namespace: postgres
+  labels:
+    app.kubernetes.io/name: postgres
+spec:
+  endpoints:
+    - port: metrics
+      path: /metrics
+    - port: metrics
+      path: /probe
+      params:
+        target:
+          - postgres/plausible
+        auth_module:
+          - postgres
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres-exporter
