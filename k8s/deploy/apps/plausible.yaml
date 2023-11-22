@@ -128,33 +128,6 @@ spec:
               type: RuntimeDefault
 
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: plausible
-  namespace: plausible
-  labels:
-    app.kubernetes.io/name: plausible
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-spec:
-  ingressClassName: cilium
-  tls:
-   - hosts:
-     - plausible.eevans.me
-     secretName: plausible-admin-tls
-  rules:
-  - host: plausible.eevans.me
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: plausible
-            port:
-              name: http
----
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -227,13 +200,7 @@ spec:
   - matches:
     - path:
         type: PathPrefix
-        value: /js
-    - path:
-        type: PathPrefix
-        value: /api
-    - path:
-        type: PathPrefix
-        value: /auth/google
+        value: /
     backendRefs:
     - name: plausible
       port: 8000
