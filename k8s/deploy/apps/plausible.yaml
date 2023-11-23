@@ -141,7 +141,7 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
-  ingressClassName: cilium
+  ingressClassName: nginx
   tls:
    - hosts:
      - plausible.eevans.me
