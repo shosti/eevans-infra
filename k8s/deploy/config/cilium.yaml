@@ -103,7 +103,7 @@ spec:
         namespace: monitoring
       resources:
         limits:
-          memory: 128Mi
+          memory: 256Mi
     resources:
       limits:
         memory: 512Mi
