@@ -15,7 +15,7 @@ backups:
     key: password
   schedule: '0 3 * * *'
   image:
-    repository: harbor.eevans.me/library/pgbackup
+    repository: gitea.eevans.me/shosti/pgbackup
     tag: v3
 
 nameOverride: ""

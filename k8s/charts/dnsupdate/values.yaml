@@ -7,7 +7,7 @@ replicaCount: 1
 schedule: '*/5 * * * *'
 
 image:
-  repository: harbor.eevans.me/library/dnsupdate
+  repository: gitea.eevans.me/shosti/dnsupdate
   tag: v1
   pullPolicy: IfNotPresent
 
