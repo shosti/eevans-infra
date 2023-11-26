@@ -20,141 +20,141 @@ spec:
   isCA: true
   commonName: harbor-self-signed
   secretName: harbor-self-signed-cert
----
-apiVersion: helm.toolkit.fluxcd.io/v2beta1
-kind: HelmRelease
-metadata:
-  name: harbor
-  namespace: harbor
-spec:
-  interval: 15m
-  timeout: 15m
-  chart:
-    spec:
-      chart: harbor
-      version: 1.11.0
-      sourceRef:
-        kind: HelmRepository
-        name: harbor
-        namespace: flux-system
-      interval: 1m
-  valuesFrom:
-    - kind: Secret
-      name: harbor-secret-values
-  values:
-    externalURL: https://harbor.eevans.me
-    metrics:
-      enabled: true
-    core:
-      secretName: harbor-self-signed-cert
-      resources:
-        requests:
-          cpu: 100m
-          memory: 128Mi
-        limits:
-          cpu: 100m
-          memory: 128Mi
-    updateStrategy:
-      type: Recreate
-    expose:
-      ingress:
-        hosts:
-          core: harbor.eevans.me
-          notary: notary.eevans.me
-        className: cilium
-        annotations:
-          cert-manager.io/cluster-issuer: letsencrypt-prod
-      tls:
-        certSource: secret
-        secret:
-          secretName: harbor-core-tls
-          notarySecretName: harbor-notary-tls
-    persistence:
-      persistentVolumeClaim:
-        registry:
-          size: 30Gi
-          storageClass: rook-cephfs
-    portal:
-      resources:
-        requests:
-          cpu: 100m
-          memory: 128Mi
-        limits:
-          cpu: 100m
-          memory: 128Mi
-    jobservice:
-      resources:
-        requests:
-          cpu: 50m
-          memory: 128Mi
-        limits:
-          cpu: 50m
-          memory: 128Mi
-    registry:
-      registry:
-        resources:
-          requests:
-            cpu: 100m
-            memory: 512Mi
-          limits:
-            cpu: 100m
-            memory: 512Mi
-      controller:
-        resources:
-          requests:
-            cpu: 50m
-            memory: 64Mi
-          limits:
-            cpu: 50m
-            memory: 64Mi
-    chartmuseum:
-      resources:
-        requests:
-          cpu: 50m
-          memory: 128Mi
-        limits:
-          cpu: 50m
-          memory: 128Mi
-    trivy:
-      resources:
-        requests:
-          cpu: 50m
-          memory: 128Mi
-        limits:
-          cpu: 50m
-          memory: 128Mi
-    notary:
-      server:
-        resources:
-          requests:
-            cpu: 50m
-            memory: 64Mi
-          limits:
-            cpu: 50m
-            memory: 64Mi
-      signer:
-        resources:
-          requests:
-            cpu: 100m
-            memory: 64Mi
-          limits:
-            cpu: 100m
-            memory: 64Mi
-    database:
-      internal:
-        resources:
-          requests:
-            cpu: 200m
-            memory: 512Mi
-          limits:
-            cpu: 200m
-            memory: 512Mi
-    redis:
-      internal:
-        resources:
-          requests:
-            cpu: 100m
-            memory: 256Mi
-          limits:
-            cpu: 100m
-            memory: 256Mi
+# ---
+# apiVersion: helm.toolkit.fluxcd.io/v2beta1
+# kind: HelmRelease
+# metadata:
+#   name: harbor
+#   namespace: harbor
+# spec:
+#   interval: 15m
+#   timeout: 15m
+#   chart:
+#     spec:
+#       chart: harbor
+#       version: 1.11.0
+#       sourceRef:
+#         kind: HelmRepository
+#         name: harbor
+#         namespace: flux-system
+#       interval: 1m
+#   valuesFrom:
+#     - kind: Secret
+#       name: harbor-secret-values
+#   values:
+#     externalURL: https://harbor.eevans.me
+#     metrics:
+#       enabled: true
+#     core:
+#       secretName: harbor-self-signed-cert
+#       resources:
+#         requests:
+#           cpu: 100m
+#           memory: 128Mi
+#         limits:
+#           cpu: 100m
+#           memory: 128Mi
+#     updateStrategy:
+#       type: Recreate
+#     expose:
+#       ingress:
+#         hosts:
+#           core: harbor.eevans.me
+#           notary: notary.eevans.me
+#         className: cilium
+#         annotations:
+#           cert-manager.io/cluster-issuer: letsencrypt-prod
+#       tls:
+#         certSource: secret
+#         secret:
+#           secretName: harbor-core-tls
+#           notarySecretName: harbor-notary-tls
+#     persistence:
+#       persistentVolumeClaim:
+#         registry:
+#           size: 30Gi
+#           storageClass: rook-cephfs
+#     portal:
+#       resources:
+#         requests:
+#           cpu: 100m
+#           memory: 128Mi
+#         limits:
+#           cpu: 100m
+#           memory: 128Mi
+#     jobservice:
+#       resources:
+#         requests:
+#           cpu: 50m
+#           memory: 128Mi
+#         limits:
+#           cpu: 50m
+#           memory: 128Mi
+#     registry:
+#       registry:
+#         resources:
+#           requests:
+#             cpu: 100m
+#             memory: 512Mi
+#           limits:
+#             cpu: 100m
+#             memory: 512Mi
+#       controller:
+#         resources:
+#           requests:
+#             cpu: 50m
+#             memory: 64Mi
+#           limits:
+#             cpu: 50m
+#             memory: 64Mi
+#     chartmuseum:
+#       resources:
+#         requests:
+#           cpu: 50m
+#           memory: 128Mi
+#         limits:
+#           cpu: 50m
+#           memory: 128Mi
+#     trivy:
+#       resources:
+#         requests:
+#           cpu: 50m
+#           memory: 128Mi
+#         limits:
+#           cpu: 50m
+#           memory: 128Mi
+#     notary:
+#       server:
+#         resources:
+#           requests:
+#             cpu: 50m
+#             memory: 64Mi
+#           limits:
+#             cpu: 50m
+#             memory: 64Mi
+#       signer:
+#         resources:
+#           requests:
+#             cpu: 100m
+#             memory: 64Mi
+#           limits:
+#             cpu: 100m
+#             memory: 64Mi
+#     database:
+#       internal:
+#         resources:
+#           requests:
+#             cpu: 200m
+#             memory: 512Mi
+#           limits:
+#             cpu: 200m
+#             memory: 512Mi
+#     redis:
+#       internal:
+#         resources:
+#           requests:
+#             cpu: 100m
+#             memory: 256Mi
+#           limits:
+#             cpu: 100m
+#             memory: 256Mi
