@@ -101,15 +101,6 @@ spec:
 apiVersion: source.toolkit.fluxcd.io/v1beta1
 kind: HelmRepository
 metadata:
-  name: harbor
-  namespace: flux-system
-spec:
-  interval: 10m
-  url: https://helm.goharbor.io
----
-apiVersion: source.toolkit.fluxcd.io/v1beta1
-kind: HelmRepository
-metadata:
   name: confluent
   namespace: flux-system
 spec:

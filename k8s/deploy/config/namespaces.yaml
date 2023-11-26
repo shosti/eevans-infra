@@ -27,11 +27,6 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: harbor
----
-apiVersion: v1
-kind: Namespace
-metadata:
   name: ingress-nginx
 ---
 apiVersion: v1

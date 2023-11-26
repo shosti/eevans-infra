@@ -15,7 +15,6 @@ resources:
 - gitea.yaml
 - gitea-act-runner.yaml
 - golinks.yaml
-- harbor.yaml
 - home-assistant.yaml
 - jellyfin.yaml
 - keycloak.yaml
