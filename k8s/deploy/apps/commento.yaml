@@ -44,7 +44,7 @@ spec:
       serviceAccountName: commento
       containers:
         - name: commento
-          image: registry.gitlab.com/commento/commento:v1.8.0
+          image: caroga/commentoplusplus:v1.8.7
           env:
             - name: COMMENTO_ORIGIN
               value: https://commento.eevans.me
