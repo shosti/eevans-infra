@@ -197,3 +197,10 @@ metadata:
     pod-security.kubernetes.io/enforce: restricted
     eevans.me/clickhouse-access: 'true'
     eevans.me/public: 'true'
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: commento
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
