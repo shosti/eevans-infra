@@ -52,6 +52,8 @@ spec:
               value: '8080'
             - name: COMMENTO_FORBID_NEW_OWNERS
               value: 'true'
+            - name: COMMENTO_ENABLE_LOGGING
+              value: 'true'
           envFrom:
             - secretRef:
                 name: commento
