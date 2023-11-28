@@ -20,3 +20,4 @@ spec:
       enabled: true
     trivy:
       severity: CRITICAL
+      ignoreUnfixed: true
