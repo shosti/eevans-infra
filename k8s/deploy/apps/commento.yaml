@@ -47,11 +47,16 @@ spec:
           env:
             - name: COMMENTO_ORIGIN
               value: https://commento.eevans.me
-            - name: COMMENTO_BIND_ADDRESS
-              value: 0.0.0.0
           envFrom:
             - secretRef:
                 name: commento
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
           securityContext:
             runAsNonRoot: true
             runAsUser: 98080
