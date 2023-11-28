@@ -39,7 +39,7 @@ spec:
         app.kubernetes.io/name: commento
         eevans.me/postgres-access: 'true'
       annotations:
-        eevans.me/secret-ref: e36ba
+        eevans.me/secret-ref: 8670f
     spec:
       serviceAccountName: commento
       containers:
