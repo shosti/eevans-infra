@@ -13,8 +13,10 @@ spec:
   numberOfInstances: 2
   users:
     plausible: []
+    commento: []
   databases:
     plausible: plausible
+    commento: commento
   postgresql:
     version: "15"
   resources:
