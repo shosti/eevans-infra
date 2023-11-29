@@ -155,8 +155,9 @@ spec:
             - port: "587"
     - toFQDNs:
         - matchName: oauth2.googleapis.com
-        - matchName: api.github.com
         - matchName: lh3.googleusercontent.com
+        - matchName: api.github.com
+        - matchName: github.com
         - matchName: avatars.githubusercontent.com
       toPorts:
         - ports:
