@@ -120,3 +120,44 @@ spec:
     matchLabels:
       app.kubernetes.io/name: commento
   minAvailable: 1
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: commento
+  namespace: commento
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: commento
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: postgres
+      toPorts:
+        - ports:
+            - port: "5432"
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+          rules:
+            dns:
+              - matchPattern: "*"
+    - toFQDNs:
+        - matchName: email-smtp.us-west-2.amazonaws.com
+      toPorts:
+        - ports:
+            - port: "587"
+    # - toFQDNs:
+    #     - matchName: data.iana.org
+    #     - matchName: icons.duckduckgo.com
+    #     - matchName: www.googleapis.com
+    #     - matchName: download.maxmind.com
+    #   toPorts:
+    #     - ports:
+    #         - port: "443"
