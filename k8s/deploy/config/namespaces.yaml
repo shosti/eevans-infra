@@ -204,3 +204,4 @@ metadata:
   name: commento
   labels:
     pod-security.kubernetes.io/enforce: restricted
+    eevans.me/public: 'true'

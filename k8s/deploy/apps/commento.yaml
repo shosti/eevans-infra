@@ -38,6 +38,7 @@ spec:
       labels:
         app.kubernetes.io/name: commento
         eevans.me/postgres-access: 'true'
+        eevans.me/public: 'true'
       annotations:
         eevans.me/secret-ref: 8670f
     spec:
@@ -47,7 +48,7 @@ spec:
           image: caroga/commentoplusplus:v1.8.7
           env:
             - name: COMMENTO_ORIGIN
-              value: https://commento.eevans.me
+              value: https://commento.eevans.co
             - name: COMMENTO_PORT
               value: '8080'
             - name: COMMENTO_FORBID_NEW_OWNERS
@@ -83,32 +84,27 @@ spec:
             seccompProfile:
               type: RuntimeDefault
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
 metadata:
   name: commento
   namespace: commento
   labels:
     app.kubernetes.io/name: commento
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
-  ingressClassName: nginx
-  tls:
-   - hosts:
-     - commento.eevans.me
-     secretName: commento-admin-tls
+  parentRefs:
+  - name: ingress-public
+    namespace: ingress-public
+  hostnames:
+    - commento.eevans.co
   rules:
-  - host: commento.eevans.me
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: commento
-            port:
-              name: http
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: commento
+      port: 8080
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
