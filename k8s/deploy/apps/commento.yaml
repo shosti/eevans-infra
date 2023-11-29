@@ -153,11 +153,11 @@ spec:
       toPorts:
         - ports:
             - port: "587"
-    # - toFQDNs:
-    #     - matchName: data.iana.org
-    #     - matchName: icons.duckduckgo.com
-    #     - matchName: www.googleapis.com
-    #     - matchName: download.maxmind.com
-    #   toPorts:
-    #     - ports:
-    #         - port: "443"
+    - toFQDNs:
+        - matchName: oauth2.googleapis.com
+        - matchName: api.github.com
+        - matchName: lh3.googleusercontent.com
+        - matchName: avatars.githubusercontent.com
+      toPorts:
+        - ports:
+            - port: "443"
