@@ -18,7 +18,7 @@ spec:
         eevans.me/public: "true"
     spec:
       containers:
-      - image: gitea.eevans.me/shosti/webrtc-introducer:v1
+      - image: gitea.eevans.me/shosti/webrtc-introducer@sha256:331b10511804c7be72ec40e253a914b033d82eed66dc32bfa91d0266449654fb
         name: webrtc-introducer
         env:
           - name: PORT
