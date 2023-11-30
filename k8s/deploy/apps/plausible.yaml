@@ -260,3 +260,20 @@ spec:
     staticConfig:
       static:
       - https://plausible.eevans.co/api/health
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: plausible
+  namespace: plausible
+spec:
+  groups:
+  - name: plausible.plausible
+    rules:
+    - alert: PlausibleDown
+      annotations:
+        summary: Plausible blog is unavailable
+      expr: probe_success{job="probe/plausible/plausible",namespace="plausible"} != 1
+      for: 30s
+      labels:
+        severity: critical

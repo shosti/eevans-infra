@@ -173,3 +173,20 @@ spec:
     staticConfig:
       static:
       - https://commento.eevans.co/js/commento.js
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: commento
+  namespace: commento
+spec:
+  groups:
+  - name: commento.commento
+    rules:
+    - alert: CommentoDown
+      annotations:
+        summary: Commento blog is unavailable
+      expr: probe_success{job="probe/commento/commento",namespace="commento"} != 1
+      for: 30s
+      labels:
+        severity: critical
