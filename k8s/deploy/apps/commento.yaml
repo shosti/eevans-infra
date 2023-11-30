@@ -158,3 +158,18 @@ spec:
       toPorts:
         - ports:
             - port: "443"
+---
+kind: Probe
+apiVersion: monitoring.coreos.com/v1
+metadata:
+  name: commento
+  namespace: commento
+spec:
+  interval: 10s
+  module: http_2xx
+  prober:
+    url: prometheus-blackbox-exporter.monitoring.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      static:
+      - https://commento.eevans.co/js/commento.js
