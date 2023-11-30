@@ -160,7 +160,7 @@ spec:
       serviceAccountName: ghost
       containers:
         - name: ghost
-          image: shosti/ghost:5.69.2
+          image: shosti/ghost:5.74.5
           env:
             - name: NODE_ENV
               value: production
