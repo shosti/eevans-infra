@@ -424,3 +424,35 @@ spec:
       ports:
         - port: 9187
   egress: []
+---
+kind: Probe
+apiVersion: monitoring.coreos.com/v1
+metadata:
+  name: listmonk
+  namespace: listmonk
+spec:
+  interval: 10s
+  module: http_2xx
+  prober:
+    url: prometheus-blackbox-exporter.monitoring.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      static:
+      - https://eevans.co/subscription/form
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: listmonk
+  namespace: listmonk
+spec:
+  groups:
+  - name: listmonk.listmonk
+    rules:
+    - alert: ListmonkDown
+      annotations:
+        summary: Listmonk blog is unavailable
+      expr: probe_success{job="probe/listmonk/listmonk",namespace="listmonk"} != 1
+      for: 30s
+      labels:
+        severity: critical
