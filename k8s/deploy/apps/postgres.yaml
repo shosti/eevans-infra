@@ -10,7 +10,7 @@ spec:
   teamId: "eevans"
   volume:
     size: 30Gi
-  numberOfInstances: 1
+  numberOfInstances: 2
   users:
     plausible: []
     commento: []
