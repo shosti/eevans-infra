@@ -37,7 +37,7 @@ spec:
     configKubernetes:
       pod_environment_configmap: postgres-env
       pod_environment_secret: postgres-env
-      enable_pod_antiaffinity: "true"
+      enable_pod_antiaffinity: true
       # The default configuration set it so the master can never be disrupted,
       # see https://github.com/zalando/postgres-operator/pull/384
       enable_pod_disruption_budget: false
