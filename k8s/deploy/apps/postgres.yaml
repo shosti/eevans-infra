@@ -14,9 +14,11 @@ spec:
   users:
     plausible: []
     commento: []
+    listmonk: []
   databases:
     plausible: plausible
     commento: commento
+    listmonk: listmonk
   postgresql:
     version: "15"
   resources:
