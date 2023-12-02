@@ -30,8 +30,6 @@ spec:
                   value: 'shosti/eevans-infra'
                 - name: RENOVATE_BASE_DIR
                   value: /tmp/renovate/
-                - name: RENOVATE_CONFIG_FILE
-                  value: /opt/renovate/config.json
                 - name: RENOVATE_ENDPOINT
                   value: https://gitea.eevans.me/api/v1
                 - name: RENOVATE_GIT_AUTHOR
