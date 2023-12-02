@@ -40,7 +40,7 @@ data:
 
     # Database.
     [db]
-    host = "listmonk-db-postgresql-0.listmonk-db-postgresql-hl"
+    host = "postgres.postgres"
     port = 5432
     user = "listmonk"
 
@@ -62,6 +62,8 @@ metadata:
     app.kubernetes.io/name: listmonk
   name: listmonk
   namespace: listmonk
+  annotations:
+    eevans.me/secret-ref: b0c18
 spec:
   replicas: 1
   selector:
@@ -73,6 +75,7 @@ spec:
       labels:
         app.kubernetes.io/name: listmonk
         eevans.me/public: "true"
+        eevans.me/postgres-access: "true"
     spec:
       initContainers:
         - image: listmonk/listmonk:v2.5.1
@@ -381,6 +384,13 @@ spec:
         - ports:
             - port: "8080"
             - port: "80"
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: postgres
+            app.kubernetes.io/name: postgres
+      toPorts:
+        - ports:
+            - port: "5432"
     - toEndpoints:
         - {}
     - toFQDNs:
