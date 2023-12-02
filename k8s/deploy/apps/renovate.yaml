@@ -1,0 +1,52 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: renovate
+  namespace: renovate
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: renovate-bot
+  namespace: renovate
+spec:
+  schedule: '@hourly'
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: renovate
+          containers:
+            - image: renovate/renovate:37.81
+              name: renovate-bot
+              env:
+                - name: RENOVATE_PLATFORM
+                  value: gitea
+                - name: RENOVATE_AUTODISCOVER
+                  value: 'false'
+                - name: RENOVATE_REPOSITORIES
+                  value: 'shosti/eevans-infra'
+                - name: RENOVATE_BASE_DIR
+                  value: /tmp/renovate/
+                - name: RENOVATE_CONFIG_FILE
+                  value: /opt/renovate/config.json
+                - name: RENOVATE_ENDPOINT
+                  value: https://gitea.eevans.me/api/v1
+                - name: RENOVATE_GIT_AUTHOR
+                  value: 'Renovate Bot <renovate@eevans.co>'
+                - name: RENOVATE_DRY_RUN
+                  value: 'full'
+                - name: LOG_LEVEL
+                  value: debug
+              envFrom:
+                - secretRef:
+                    name: renovate
+              volumeMounts:
+                - name: work-volume
+                  mountPath: /tmp/renovate/
+          restartPolicy: Never
+          volumes:
+            - name: work-volume
+              emptyDir: {}

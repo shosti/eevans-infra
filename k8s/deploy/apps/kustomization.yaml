@@ -26,6 +26,7 @@ resources:
 - plausible.yaml
 - postgres.yaml
 - postgres-exporter.yaml
+- renovate.yaml
 - terraform-state-backup.yaml
 - trivy-operator.yaml
 - truenas-minio.yaml

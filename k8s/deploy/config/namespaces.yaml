@@ -205,3 +205,8 @@ metadata:
   labels:
     pod-security.kubernetes.io/enforce: restricted
     eevans.me/public: 'true'
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: renovate
