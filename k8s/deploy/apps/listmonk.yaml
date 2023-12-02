@@ -1,32 +1,4 @@
 ---
-apiVersion: helm.toolkit.fluxcd.io/v2beta1
-kind: HelmRelease
-metadata:
-  name: listmonk-db
-  namespace: listmonk
-  labels:
-    app.kubernetes.io/name: listmonk
-spec:
-  interval: 5m
-  chart:
-    spec:
-      chart: postgresql
-      version: 13.2.1
-      sourceRef:
-        kind: HelmRepository
-        name: bitnami
-        namespace: flux-system
-      interval: 1m
-  values:
-    auth:
-      username: listmonk
-      database: listmonk
-      existingSecret: listmonk-db
-    metrics:
-      enabled: true
-      serviceMonitor:
-        enabled: true
----
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -284,38 +256,6 @@ spec:
     - name: rook-ceph-rgw-s3-public
       port: 80
 ---
-apiVersion: helm.toolkit.fluxcd.io/v2beta1
-kind: HelmRelease
-metadata:
-  name: postgres-config-listmonk
-  namespace: listmonk
-spec:
-  interval: 5m
-  chart:
-    spec:
-      chart: ./k8s/charts/postgres-config
-      sourceRef:
-        kind: GitRepository
-        name: eevans-infra
-        namespace: flux-system
-      interval: 1m
-  values:
-    postgresService: listmonk-db-postgresql-hl
-
-    backups:
-      enabled: true
-      image:
-        tag: v7-pg16
-      repositoryName: b2:eevans-lan-db-backups:listmonk
-      postgresql:
-        host: listmonk-db-postgresql-0
-        database: listmonk
-        user: listmonk
-      postgresCredentials:
-        name: listmonk-db
-        key: password
-      healthCheckURL: https://hc-ping.com/d1416842-55fc-4341-921c-07f71b731b3a
----
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
@@ -404,36 +344,6 @@ spec:
       toPorts:
         - ports:
             - port: "443"
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: postgres
-  namespace: listmonk
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/instance: listmonk-db
-  policyTypes:
-    - Egress
-    - Ingress
-  ingress:
-    - from:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: listmonk
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/instance: postgres-config-listmonk
-      ports:
-        - port: 5432
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: monitoring
-      ports:
-        - port: 9187
-  egress: []
 ---
 kind: Probe
 apiVersion: monitoring.coreos.com/v1
