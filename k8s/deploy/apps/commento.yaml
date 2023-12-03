@@ -40,7 +40,7 @@ spec:
         eevans.me/postgres-access: 'true'
         eevans.me/public: 'true'
       annotations:
-        eevans.me/secret-ref: 8670f
+        eevans.me/secret-ref: aef55
     spec:
       serviceAccountName: commento
       containers:
@@ -148,7 +148,7 @@ spec:
         - matchName: email-smtp.us-west-2.amazonaws.com
       toPorts:
         - ports:
-            - port: "587"
+            - port: "465"
     - toFQDNs:
         - matchName: oauth2.googleapis.com
         - matchName: lh3.googleusercontent.com
