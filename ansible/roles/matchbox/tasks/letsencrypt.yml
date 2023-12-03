@@ -25,7 +25,7 @@
     name: certbot
     cleanup: true
     detach: false
-    image: certbot/dns-cloudflare:v2.6.0
+    image: certbot/dns-cloudflare:v2.7.4
     volumes:
       - '/opt/matchbox/letsencrypt/etc:/etc/letsencrypt:rw'
       - '/opt/matchbox/letsencrypt/var:/var/letsencrypt:rw'
