@@ -1,4 +1,4 @@
-FROM restic/restic:0.15.1 AS restic
+FROM restic/restic:0.16.2 AS restic
 
 FROM postgres:16.1-bullseye
 
