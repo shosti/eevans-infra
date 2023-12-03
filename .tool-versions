@@ -1,6 +1,6 @@
 awscli 2.13.24
 flux2 2.1.2
-helm 3.11.0
+helm 3.13.2
 kustomize 5.2.1
 terraform 1.5.7
 cosign 2.2.0
