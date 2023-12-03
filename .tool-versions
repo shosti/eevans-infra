@@ -4,7 +4,7 @@ helm 3.11.0
 kustomize 5.2.1
 terraform 1.5.7
 cosign 2.2.0
-kubectl 1.28.2
+kubectl 1.28.4
 python 3.12.0
 cilium-cli 0.15.11
 golang 1.21.3
