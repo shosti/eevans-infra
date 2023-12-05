@@ -1,6 +1,6 @@
 module gitea.eevans.me/shosti/eevans-infra
 
-go 1.21.4
+go 1.21.5
 
 require (
 	github.com/aws/aws-sdk-go v1.48.12
