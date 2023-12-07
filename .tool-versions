@@ -1,7 +1,7 @@
 awscli 2.15.0
 flux2 2.1.2
 helm 3.13.2
-kustomize 5.2.1
+kustomize 5.3.0
 terraform 1.5.7
 cosign 2.2.0
 kubectl 1.28.4
