@@ -87,7 +87,7 @@ spec:
   chart:
     spec:
       chart: gitea
-      version: 9.5.1
+      version: 9.6.1
       sourceRef:
         kind: HelmRepository
         name: gitea
