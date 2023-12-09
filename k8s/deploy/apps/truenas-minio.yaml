@@ -39,7 +39,7 @@ spec:
   chart:
     spec:
       chart: minio
-      version: 12.8.14
+      version: 12.10.6
       sourceRef:
         kind: HelmRepository
         name: bitnami
@@ -65,6 +65,14 @@ spec:
       tls: true
       annotations:
         cert-manager.io/cluster-issuer: letsencrypt-prod
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: storage
+              topologyKey: kubernetes.io/hostname
     ingress:
       enabled: true
       ingressClassName: nginx
