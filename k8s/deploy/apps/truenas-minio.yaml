@@ -66,13 +66,12 @@ spec:
       annotations:
         cert-manager.io/cluster-issuer: letsencrypt-prod
     affinity:
-      nodeAffinity:
+      podAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-          - podAffinityTerm:
-              labelSelector:
-                matchLabels:
-                  app.kubernetes.io/name: storage
-              topologyKey: kubernetes.io/hostname
+          - labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: storage
+            topologyKey: kubernetes.io/hostname
     ingress:
       enabled: true
       ingressClassName: nginx
