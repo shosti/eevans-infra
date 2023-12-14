@@ -175,6 +175,8 @@ spec:
     postgresql-ha:
       enabled: false
     deployment:
+      labels:
+        gitea-redis-client: "true"
       env:
         - name: USER_UID
           value: "1000"
