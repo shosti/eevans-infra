@@ -74,7 +74,7 @@ spec:
   chart:
     spec:
       chart: keycloak
-      version: 17.0.1
+      version: 17.0.3
       sourceRef:
         kind: HelmRepository
         name: codecentric
