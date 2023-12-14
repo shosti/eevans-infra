@@ -165,6 +165,15 @@ spec:
         server:
           ROOT_URL: https://gitea.eevans.me/
           WEBHOOK_DELIVER_TIMEOUT: '20'
+        cache:
+          ENABLED: true
+          ADAPTER: redis
+          HOST: redis+sentinel://gitea-redis:26379/0?master_name=gitea
+        queue:
+          TYPE: redis
+          CONN_STR: redis+sentinel://gitea-redis:26379/0?master_name=gitea
+        session:
+          PROVIDER_CONFIG: redis+sentinel://gitea-redis:26379/0?master_name=gitea
         log:
           COLORIZE: "false"
         webhook:
