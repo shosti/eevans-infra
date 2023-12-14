@@ -184,6 +184,8 @@ spec:
       enabled: false
     postgresql-ha:
       enabled: false
+    redis-cluster:
+      enabled: false
     deployment:
       labels:
         gitea-redis-client: "true"
