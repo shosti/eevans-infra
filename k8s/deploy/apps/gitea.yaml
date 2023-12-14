@@ -36,6 +36,7 @@ spec:
         size: 1Gi
     sentinel:
       enabled: true
+      masterSet: gitea
       resources:
         limits:
           cpu: 100m
