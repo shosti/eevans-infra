@@ -37,8 +37,9 @@ spec:
     sentinel:
       enabled: true
       resources:
-        cpu: 100m
-        memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
     metrics:
       enabled: true
       serviceMonitor:
