@@ -182,9 +182,8 @@ spec:
           COLORIZE: "false"
         webhook:
           ALLOWED_HOST_LIST: private
-        cron:
-          GIT_GC_REPOS:
-            ENABLED: false
+        'cron.GIT_GC_REPOS':
+          ENABLED: false
         actions:
           ENABLED: "true"
     postgresql:
@@ -232,6 +231,8 @@ spec:
       enabled: true
       create: false
       claimName: gitea-data
+      accessModes:
+        - ReadWriteMany
     resources:
       limits:
           cpu: 750m
