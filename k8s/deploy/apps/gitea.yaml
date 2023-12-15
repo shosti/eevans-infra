@@ -170,6 +170,9 @@ spec:
           ENABLED: true
           ADAPTER: redis
           HOST: redis+sentinel://gitea-redis:26379/0?master_name=gitea
+        indexer:
+          ISSUE_INDEXER_TYPE: db
+          REPO_INDEXER_ENABLED: false
         queue:
           TYPE: redis
           CONN_STR: redis+sentinel://gitea-redis:26379/0?master_name=gitea
@@ -179,6 +182,9 @@ spec:
           COLORIZE: "false"
         webhook:
           ALLOWED_HOST_LIST: private
+        cron:
+          GIT_GC_REPOS:
+            ENABLED: false
         actions:
           ENABLED: "true"
     postgresql:
