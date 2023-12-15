@@ -18,6 +18,7 @@ resources:
 - golinks.yaml
 - home-assistant.yaml
 - jellyfin.yaml
+- kepler.yaml
 - keycloak.yaml
 - listmonk.yaml
 - mariadb.yaml
