@@ -18,3 +18,5 @@ spec:
   values:
     serviceMonitor:
       enabled: true
+    canMount:
+      usrSrc: true
