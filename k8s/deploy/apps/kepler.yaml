@@ -162,3 +162,36 @@ spec:
       tolerations:
         - effect: NoSchedule
           key: node-role.kubernetes.io/control-plane
+---
+# Source: kepler/templates/servicemonitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kepler-prometheus-exporter
+  namespace: kepler
+  labels:
+    app.kubernetes.io/name: kepler
+    app.kubernetes.io/component: exporter
+    app.kubernetes.io/version: "release-0.7.1"
+spec:
+  jobLabel: app.kubernetes.io/name
+  endpoints:
+    - port: http
+      interval: 30s
+      scrapeTimeout: 5s
+      path: /metrics
+      scheme: http
+      relabelings:
+        - action: replace
+          regex: (.*)
+          replacement: $1
+          sourceLabels:
+            - __meta_kubernetes_pod_node_name
+          targetLabel: instance
+  namespaceSelector:
+    matchNames:
+      - kepler
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kepler
+      app.kubernetes.io/component: exporter
