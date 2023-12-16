@@ -177,7 +177,7 @@ spec:
   jobLabel: app.kubernetes.io/name
   endpoints:
     - port: http
-      interval: 30s
+      interval: 5m
       scrapeTimeout: 5s
       path: /metrics
       scheme: http
