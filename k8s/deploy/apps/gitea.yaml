@@ -186,12 +186,6 @@ spec:
           ENABLED: false
         actions:
           ENABLED: "true"
-        repository.signing:
-          SIGNING_KEY: 5C8BB2B8C941976D6C93B428192B3F842824E1F6
-          SIGNING_NAME: EEvans Gitea
-          SIGNING_EMAIL: gitea@eevans.co
-          INITIAL_COMMIT: always
-          MERGES: pubkey
     postgresql:
       enabled: false
     postgresql-ha:
@@ -270,34 +264,3 @@ spec:
       claimName: gitea-data
     cache:
       storageClass: rook-ceph-block
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: import-gitea-key-77932
-  namespace: gitea
-spec:
-  template:
-    spec:
-      restartPolicy: OnFailure
-      containers:
-        - name: import-key
-          # Use gitea image to prevent GPG version mismatch mishaps
-          image: gitea/gitea:1.21.1-rootless
-          command: [gpg, --import, /gpg/key.asc]
-          volumeMounts:
-            - mountPath: /data
-              name: data
-            - name: gpg
-              mountPath: /gpg
-              readOnly: true
-          env:
-            - name: HOME
-              value: /data/gitea/git
-      volumes:
-        - name: data
-          persistentVolumeClaim:
-            claimName: gitea-data
-        - name: gpg
-          secret:
-            secretName: gitea-gpg-key
