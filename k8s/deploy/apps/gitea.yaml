@@ -186,6 +186,16 @@ spec:
           ENABLED: false
         actions:
           ENABLED: "true"
+        repository.signing:
+          SIGNING_KEY: 5C8BB2B8C941976D6C93B428192B3F842824E1F6
+          SIGNING_NAME: EEvans Gitea
+          SIGNING_EMAIL: gitea@eevans.co
+          INITIAL_COMMIT: always
+          MERGES: pubkey
+    signing:
+      enabled: true
+      gpgHome: /gpg/.gnupg
+      existingSecret: gitea-gpg-key
     postgresql:
       enabled: false
     postgresql-ha:
@@ -216,7 +226,7 @@ spec:
           - path: /
             pathType: Prefix
       tls:
-      -   hosts:
+        - hosts:
           - gitea.eevans.me
           secretName: gitea-tls
       annotations:
@@ -233,6 +243,15 @@ spec:
       claimName: gitea-data
       accessModes:
         - ReadWriteMany
+    extraVolumes:
+      - name: gpg
+        emptyDir: {}
+    extraContainerVolumeMounts:
+      - name: gpg
+        mountPath: /gpg
+    extraInitVolumeMounts:
+      - name: gpg
+        mountPath: /gpg
     resources:
       limits:
           cpu: 750m
