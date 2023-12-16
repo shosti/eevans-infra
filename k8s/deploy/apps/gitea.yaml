@@ -150,7 +150,7 @@ spec:
   values:
     image:
       rootless: true
-    replicaCount: 2
+    replicaCount: 1
     containerSecurityContext:
       privileged: false
       readOnlyRootFilesystem: true
