@@ -191,7 +191,7 @@ spec:
           SIGNING_NAME: EEvans Gitea
           SIGNING_EMAIL: gitea@eevans.co
           INITIAL_COMMIT: always
-          MERGES: pubkey
+          MERGES: always
     signing:
       enabled: true
       gpgHome: /gpg/.gnupg
