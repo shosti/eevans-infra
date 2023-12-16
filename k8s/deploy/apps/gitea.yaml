@@ -246,10 +246,7 @@ spec:
     extraVolumes:
       - name: gpg
         emptyDir: {}
-    extraContainerVolumeMounts:
-      - name: gpg
-        mountPath: /gpg
-    extraInitVolumeMounts:
+    extraVolumeMounts:
       - name: gpg
         mountPath: /gpg
     resources:
