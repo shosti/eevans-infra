@@ -400,7 +400,7 @@ spec:
       annotations:
         summary: Ghost blog is unavailable
       expr: probe_success{job="probe/ghost/ghost",namespace="ghost"} != 1
-      for: 30s
+      for: 1m
       labels:
         severity: critical
 ---
