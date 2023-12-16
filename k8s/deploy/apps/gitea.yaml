@@ -186,6 +186,12 @@ spec:
           ENABLED: false
         actions:
           ENABLED: "true"
+        repository.signing:
+          SIGNING_KEY: 5C8BB2B8C941976D6C93B428192B3F842824E1F6
+          SIGNING_NAME: EEvans Gitea
+          SIGNING_EMAIL: gitea@eevans.co
+          INITIAL_COMMIT: always
+          MERGES: pubkey
     postgresql:
       enabled: false
     postgresql-ha:
