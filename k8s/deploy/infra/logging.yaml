@@ -8,7 +8,7 @@ spec:
   bucketName: loki-data
   storageClassName: rook-ceph-bucket
 ---
-apiVersion: helm.toolkit.fluxcd.io/v2beta1
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
   name: promtail
@@ -98,7 +98,7 @@ spec:
         mountPath: /secrets
         readOnly: true
 ---
-apiVersion: helm.toolkit.fluxcd.io/v2beta1
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
   name: loki

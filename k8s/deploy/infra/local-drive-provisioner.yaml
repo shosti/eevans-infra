@@ -52,7 +52,7 @@ spec:
             secretName: local-drives
 ---
 # This is the official provisioner
-apiVersion: helm.toolkit.fluxcd.io/v2beta1
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
   name: local-static-provisioner
