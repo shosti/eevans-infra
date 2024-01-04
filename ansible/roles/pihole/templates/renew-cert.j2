@@ -4,8 +4,11 @@
 
 set -euo pipefail
 
-# Check if opt directory is mounted
-systemctl status opt.mount
+# Check if letsencrypt directory is mounted
+[ -d /opt/letsencrypt ] || {
+    echo "letsencrypt directory not mounted"
+    exit 1
+}
 
 docker run --rm \
        -v /opt/letsencrypt/etc:/etc/letsencrypt:rw \
