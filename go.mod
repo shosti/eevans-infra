@@ -5,7 +5,7 @@ go 1.21.5
 require (
 	github.com/aws/aws-sdk-go v1.49.14
 	github.com/aws/aws-sdk-go-v2/config v1.26.2
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.47.5
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.47.7
 	github.com/jaytaylor/html2text v0.0.0-20230321000545-74c2419ad056
 	github.com/johannesboyne/gofakes3 v0.0.0-20230914150226-f005f5cc03aa
 	github.com/mmcdole/gofeed v1.2.1
