@@ -111,6 +111,50 @@ spec:
                   - key: tls.key
                     path: client.root.key
 ---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-admin-user
+  namespace: crdb
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: crdb
+          image: cockroachdb/cockroach:v23.1.11
+          volumeMounts:
+            - name: client-certs
+              mountPath: /cockroach/cockroach-certs/
+              readOnly: true
+          envFrom:
+            - secretRef:
+                name: crdb-admin
+          command:
+            - /bin/bash
+            - -c
+            - |
+              cockroach sql \
+                --certs-dir=/cockroach/cockroach-certs \
+                --host=crdb-public \
+                --execute "CREATE USER $USERNAME IDENTIFIED BY '$PASSWORD'; GRANT admin TO $USERNAME;"
+      volumes:
+        - name: client-certs
+          projected:
+            sources:
+              - secret:
+                  name: crdb-node
+                  items:
+                    - key: ca.crt
+                      path: ca.crt
+              - secret:
+                  name: crdb-root
+                  items:
+                    - key: tls.crt
+                      path: client.root.crt
+                    - key: tls.key
+                      path: client.root.key
+---
 # The CRDB operator publishes cert secrets in a super annoying way instead of
 # using standard TLS formats. So we need a dumb job to copy to a proper format.
 apiVersion: batch/v1
