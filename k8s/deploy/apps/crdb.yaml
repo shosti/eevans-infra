@@ -85,7 +85,7 @@ spec:
     spec:
       containers:
       - name: cockroachdb-client-secure
-        image: cockroachdb/cockroach:v23.1.6
+        image: cockroachdb/cockroach:v23.1.13
         volumeMounts:
         - name: client-certs
           mountPath: /cockroach/cockroach-certs/
