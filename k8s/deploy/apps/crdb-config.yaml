@@ -20,7 +20,7 @@ spec:
             - sql
             - --certs-dir=/cockroach/cockroach-certs
             - --host=crdb-public
-            - --execute="CREATE DATABASE keycloaktest; CREATE USER keycloaktest; ALTER DATABASE keycloaktest OWNER TO keycloaktest;"
+            - --execute=CREATE DATABASE keycloaktest; CREATE USER keycloaktest; ALTER DATABASE keycloaktest OWNER TO keycloaktest;
       volumes:
         - name: client-certs
           projected:
