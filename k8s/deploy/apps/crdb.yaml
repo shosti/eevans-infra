@@ -21,7 +21,7 @@ spec:
       cpu: 1
       memory: 2Gi
   tlsEnabled: true
-  cockroachDBVersion: v23.1.13
+  cockroachDBVersion: v23.1.11
   nodes: 3
   ingress:
     sql:
@@ -85,7 +85,7 @@ spec:
     spec:
       containers:
       - name: cockroachdb-client-secure
-        image: cockroachdb/cockroach:v23.1.13
+        image: cockroachdb/cockroach:v23.1.11
         volumeMounts:
         - name: client-certs
           mountPath: /cockroach/cockroach-certs/
