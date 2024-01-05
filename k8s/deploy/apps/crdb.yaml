@@ -1,249 +1,251 @@
 # Generates a single multi-tenant CockroachDB cluster
-# ---
-# apiVersion: crdb.cockroachlabs.com/v1alpha1
-# kind: CrdbCluster
-# metadata:
-#   name: crdb
-#   namespace: crdb
-# spec:
-#   dataStore:
-#     pvc:
-#       spec:
-#         storageClassName: local-drive
-#         accessModes:
-#           - ReadWriteOnce
-#         resources:
-#           requests:
-#             storage: 50Gi
-#         volumeMode: Filesystem
-#   resources:
-#     limits:
-#       cpu: 1
-#       memory: 2Gi
-#   tlsEnabled: true
-#   cockroachDBVersion: v23.1.11
-#   nodes: 3
-#   ingress:
-#     sql:
-#       host: sql.crdb.eevans.me
-#     ui:
-#       host: crdb.eevans.me
-#       tls:
-#         - hosts:
-#             - crdb.eevans.me
-#           secretName: crdb-tls
-#       annotations:
-#         cert-manager.io/cluster-issuer: letsencrypt-prod
-#         nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-#   affinity:
-#     podAntiAffinity:
-#       requiredDuringSchedulingIgnoredDuringExecution:
-#         - labelSelector:
-#             matchExpressions:
-#             - key: app.kubernetes.io/instance
-#               operator: In
-#               values:
-#               - crdb
-#           topologyKey: kubernetes.io/hostname
-# ---
-# apiVersion: monitoring.coreos.com/v1
-# kind: ServiceMonitor
-# metadata:
-#   name: crdb
-#   namespace: crdb
-# spec:
-#   endpoints:
-#     - port: http
-#       path: /_status/vars
-#       scheme: https
-#       tlsConfig:
-#         insecureSkipVerify: true
-#   selector:
-#     matchLabels:
-#       app.kubernetes.io/name: cockroachdb
-#       app.kubernetes.io/instance: crdb
-# ---
-# # Source: https://github.com/cockroachdb/cockroach-operator/blob/master/examples/client-secure-operator.yaml
-# apiVersion: apps/v1
-# kind: Deployment
-# metadata:
-#   name: crdb-admin
-#   namespace: crdb
-#   labels:
-#     app.kubernetes.io/name: crdb
-#     app.kubernetes.io/instance: admin
-# spec:
-#   selector:
-#     matchLabels:
-#       app.kubernetes.io/name: crdb
-#       app.kubernetes.io/instance: admin
-#   template:
-#     metadata:
-#       labels:
-#         app.kubernetes.io/name: crdb
-#         app.kubernetes.io/instance: admin
-#     spec:
-#       containers:
-#       - name: cockroachdb-client-secure
-#         image: cockroachdb/cockroach:v23.1.11
-#         volumeMounts:
-#         - name: client-certs
-#           mountPath: /cockroach/cockroach-certs/
-#           readOnly: true
-#         command:
-#         - sleep
-#         - "infinity"
-#       terminationGracePeriodSeconds: 0
-#       volumes:
-#       - name: client-certs
-#         projected:
-#           sources:
-#             - secret:
-#                 name: crdb-node
-#                 items:
-#                   - key: ca.crt
-#                     path: ca.crt
-#             - secret:
-#                 name: crdb-root
-#                 items:
-#                   - key: tls.crt
-#                     path: client.root.crt
-#                   - key: tls.key
-#                     path: client.root.key
-# ---
-# # The CRDB operator published cert secrets in a super annoying way instead of
-# # using standard TLS formats. So we need a dumb job to copy to a proper format.
-# apiVersion: batch/v1
-# kind: Job
-# metadata:
-#   name: crdb-tls-secret-copy
-#   namespace: cert-manager
-#   labels:
-#     app.kubernetes.io/name: crdb-tls-secret-copy
-# spec:
-#   template:
-#     metadata:
-#       labels:
-#         app.kubernetes.io/name: crdb-tls-secret-copy
-#     spec:
-#       serviceAccountName: crdb-tls-secret-copy
-#       restartPolicy: OnFailure
-#       containers:
-#         - name: crdb-tls-secret-copy
-#           image: bitnami/kubectl:1.28.2
-#           command:
-#             - bash
-#             - -c
-#             - |
-#               set -euo pipefail
+---
+apiVersion: crdb.cockroachlabs.com/v1alpha1
+kind: CrdbCluster
+metadata:
+  name: crdb
+  namespace: crdb
+spec:
+  dataStore:
+    pvc:
+      spec:
+        storageClassName: local-drive
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 50Gi
+        volumeMode: Filesystem
+  resources:
+    limits:
+      cpu: 1
+      memory: 2Gi
+  tlsEnabled: true
+  cockroachDBVersion: v23.1.11
+  nodes: 3
+  ingress:
+    sql:
+      host: sql.crdb.eevans.me
+    ui:
+      host: crdb.eevans.me
+      tls:
+        - hosts:
+            - crdb.eevans.me
+          secretName: crdb-tls
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+        nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/instance
+              operator: In
+              values:
+              - crdb
+          topologyKey: kubernetes.io/hostname
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: crdb
+  namespace: crdb
+spec:
+  endpoints:
+    - port: http
+      path: /_status/vars
+      scheme: https
+      tlsConfig:
+        insecureSkipVerify: true
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cockroachdb
+      app.kubernetes.io/instance: crdb
+---
+# Source: https://github.com/cockroachdb/cockroach-operator/blob/master/examples/client-secure-operator.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crdb-admin
+  namespace: crdb
+  labels:
+    app.kubernetes.io/name: crdb
+    app.kubernetes.io/instance: admin
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: crdb
+      app.kubernetes.io/instance: admin
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: crdb
+        app.kubernetes.io/instance: admin
+    spec:
+      containers:
+      - name: cockroachdb-client-secure
+        image: cockroachdb/cockroach:v23.1.11
+        volumeMounts:
+        - name: client-certs
+          mountPath: /cockroach/cockroach-certs/
+          readOnly: true
+        command:
+        - sleep
+        - "infinity"
+      terminationGracePeriodSeconds: 0
+      volumes:
+      - name: client-certs
+        projected:
+          sources:
+            - secret:
+                name: crdb-node
+                items:
+                  - key: ca.crt
+                    path: ca.crt
+            - secret:
+                name: crdb-root
+                items:
+                  - key: tls.crt
+                    path: client.root.crt
+                  - key: tls.key
+                    path: client.root.key
+---
+# The CRDB operator publishes cert secrets in a super annoying way instead of
+# using standard TLS formats. So we need a dumb job to copy to a proper format.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: crdb-tls-secret-copy
+  namespace: crdb
+  labels:
+    app.kubernetes.io/name: crdb-tls-secret-copy
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: crdb-tls-secret-copy
+    spec:
+      serviceAccountName: crdb-tls-secret-copy
+      restartPolicy: OnFailure
+      containers:
+        - name: crdb-tls-secret-copy
+          image: bitnami/kubectl:1.28.2
+          command:
+            - bash
+            - -c
+            - |
+              set -euo pipefail
 
-#               get_secret() {
-#                   kubectl get secret -n crdb "$@"
-#               }
+              get_secret() {
+                  kubectl get secret -n crdb "$@"
+              }
 
-#               key="$(get_secret crdb-ca -o jsonpath='{.data.ca\.key}')"
-#               if ! [ "$key" ]; then
-#                   echo "Key not found"
-#                   exit 1
-#               fi
+              key="$(get_secret crdb-ca -o jsonpath='{.data.ca\.key}')"
+              if ! [ "$key" ]; then
+                  echo "Key not found"
+                  exit 1
+              fi
 
-#               cert="$(get_secret crdb-node -o jsonpath='{.data.ca\.crt}')"
-#               if ! [ "$cert" ]; then
-#                   echo "Cert not found"
-#                   exit 1
-#               fi
+              cert="$(get_secret crdb-node -o jsonpath='{.data.ca\.crt}')"
+              if ! [ "$cert" ]; then
+                  echo "Cert not found"
+                  exit 1
+              fi
 
-#               cat <<EOS | kubectl apply -f -
-#               apiVersion: v1
-#               kind: Secret
-#               type: kubernetes.io/tls
-#               metadata:
-#                 name: crdb-ca-tls
-#                 namespace: cert-manager
-#                 labels:
-#                   app.kuberenets.io/managed-by: crdb-tls-secret-copy
-#               data:
-#                 tls.key: "$key"
-#                 tls.crt: "$cert"
-#               EOS
-# ---
-# apiVersion: v1
-# kind: ServiceAccount
-# metadata:
-#   name: crdb-tls-secret-copy
-#   namespace: cert-manager
-#   labels:
-#     app.kubernetes.io/name: crdb-tls-secret-copy
-# ---
-# apiVersion: rbac.authorization.k8s.io/v1
-# kind: ClusterRole
-# metadata:
-#   name: crdb-tls-secret-copy-read
-#   labels:
-#     app.kubernetes.io/name: crdb-tls-secret-copy
-# rules:
-# - apiGroups:
-#   - ""
-#   resources:
-#   - secrets
-#   verbs:
-#   - get
-#   - list
-#   - watch
-# ---
-# apiVersion: rbac.authorization.k8s.io/v1
-# kind: Role
-# metadata:
-#   name: crdb-tls-secret-copy-write
-#   namespace: cert-manager
-#   labels:
-#     app.kubernetes.io/name: crdb-tls-secret-copy
-# rules:
-# - apiGroups:
-#   - ""
-#   resources:
-#   - secrets
-#   verbs:
-#   - get
-#   - patch
-#   - create
-#   - update
-# ---
-# apiVersion: rbac.authorization.k8s.io/v1
-# kind: RoleBinding
-# metadata:
-#   name: crdb-tls-secret-copy-read
-#   namespace: crdb
-#   labels:
-#     app.kubernetes.io/name: crdb-tls-secret-copy
-# roleRef:
-#   apiGroup: rbac.authorization.k8s.io
-#   kind: ClusterRole
-#   name: crdb-tls-secret-copy-read
-# subjects:
-# - kind: ServiceAccount
-#   name: crdb-tls-secret-copy
-#   namespace: cert-manager
-# ---
-# apiVersion: rbac.authorization.k8s.io/v1
-# kind: RoleBinding
-# metadata:
-#   name: crdb-tls-secret-copy-write
-#   namespace: cert-manager
-#   labels:
-#     app.kubernetes.io/name: crdb-tls-secret-copy
-# roleRef:
-#   apiGroup: rbac.authorization.k8s.io
-#   kind: Role
-#   name: crdb-tls-secret-copy-write
-# subjects:
-# - kind: ServiceAccount
-#   name: crdb-tls-secret-copy
-# ---
-# apiVersion: cert-manager.io/v1
-# kind: ClusterIssuer
-# metadata:
-#   name: crdb-issuer
-# spec:
-#   ca:
-#     secretName: crdb-ca-tls
+              cat <<EOS | kubectl apply -f -
+              apiVersion: v1
+              kind: Secret
+              type: kubernetes.io/tls
+              metadata:
+                name: crdb-ca-tls
+                namespace: crdb
+                labels:
+                  app.kuberenets.io/managed-by: crdb-tls-secret-copy
+              data:
+                tls.key: "$key"
+                tls.crt: "$cert"
+              EOS
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: crdb-tls-secret-copy
+  namespace: crdb
+  labels:
+    app.kubernetes.io/name: crdb-tls-secret-copy
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: crdb-tls-secret-copy-read
+  namespace: crdb
+  labels:
+    app.kubernetes.io/name: crdb-tls-secret-copy
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: crdb-tls-secret-copy-write
+  namespace: crdb
+  labels:
+    app.kubernetes.io/name: crdb-tls-secret-copy
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - patch
+  - create
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: crdb-tls-secret-copy-read
+  namespace: crdb
+  labels:
+    app.kubernetes.io/name: crdb-tls-secret-copy
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: crdb-tls-secret-copy-read
+subjects:
+- kind: ServiceAccount
+  name: crdb-tls-secret-copy
+  namespace: crdb
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: crdb-tls-secret-copy-write
+  namespace: crdb
+  labels:
+    app.kubernetes.io/name: crdb-tls-secret-copy
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: crdb-tls-secret-copy-write
+subjects:
+- kind: ServiceAccount
+  name: crdb-tls-secret-copy
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: crdb-issuer
+  namespace: crdb
+spec:
+  ca:
+    secretName: crdb-ca-tls
