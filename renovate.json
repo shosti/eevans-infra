@@ -7,6 +7,12 @@
       "k8s/apps/.+\\.ya?ml$"
     ]
   },
+  "kubernetes": {
+    "fileMatch": [
+      "k8s/deploy/.+\\.ya?ml$",
+      "k8s/apps/.+\\.ya?ml$"
+    ]
+  },
   "ignorePaths": [
     "docker/",
     "terraform-modules/"
