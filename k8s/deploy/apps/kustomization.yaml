@@ -8,6 +8,7 @@ resources:
 - clickhouse-operator.yaml
 - commento.yaml
 - crdb.yaml
+- crdb-config.yaml
 - dnsupdate.yaml
 - eevansco.yaml
 - eevansco-static.yaml
