@@ -137,7 +137,7 @@ spec:
               cockroach sql \
                 --certs-dir=/cockroach/cockroach-certs \
                 --host=crdb-public \
-                --execute "CREATE USER $USERNAME IDENTIFIED BY '$PASSWORD'; GRANT admin TO $USERNAME;"
+                --execute "CREATE USER $USERNAME WITH PASSWORD '$PASSWORD'; GRANT admin TO $USERNAME;"
       volumes:
         - name: client-certs
           projected:
