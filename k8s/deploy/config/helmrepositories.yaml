@@ -187,3 +187,12 @@ metadata:
 spec:
   interval: 10m
   url: https://sustainable-computing-io.github.io/kepler-helm-chart
+---
+apiVersion: source.toolkit.fluxcd.io/v1beta1
+kind: HelmRepository
+metadata:
+  name: emberstack
+  namespace: flux-system
+spec:
+  interval: 10m
+  url: https://emberstack.github.io/helm-charts

@@ -18,5 +18,6 @@ resources:
   - monitoring.yaml
   - node-inotify.yaml
   - oauth2-proxy.yaml
+  - reflector.yaml
   - snmp.yaml
   - sriov.yaml
