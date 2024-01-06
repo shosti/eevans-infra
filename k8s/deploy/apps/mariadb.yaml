@@ -75,7 +75,7 @@ spec:
 
   metrics:
     exporter:
-      image: prom/mysqld-exporter:v0.15.0
+      image: prom/mysqld-exporter:v0.15.1
       args:
         - --mysqld.address=localhost:3306
         - --mysqld.username=mariadb-metrics
