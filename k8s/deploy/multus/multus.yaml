@@ -151,10 +151,10 @@ spec:
           resources:
             requests:
               cpu: "100m"
-              memory: "50Mi"
+              memory: "128Mi"
             limits:
               cpu: "100m"
-              memory: "50Mi"
+              memory: "128Mi"
           securityContext:
             privileged: true
           volumeMounts:
@@ -197,7 +197,7 @@ spec:
           resources:
             requests:
               cpu: "10m"
-              memory: "15Mi"
+              memory: "50Mi"
           securityContext:
             privileged: true
           volumeMounts:
