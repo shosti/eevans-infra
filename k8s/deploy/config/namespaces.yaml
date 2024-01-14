@@ -144,6 +144,11 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
+  name: crdb
+---
+apiVersion: v1
+kind: Namespace
+metadata:
   name: mariadb-operator
   labels:
     eevans.me/mariadb-access: 'true'

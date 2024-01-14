@@ -43,3 +43,5 @@ spec:
         maxReplicas: 5
         targetCPUUtilizationPercentage: 75
         targetMemoryUtilizationPercentage: 75
+    tcp:
+      "26257": crdb/crdb-public:26257
