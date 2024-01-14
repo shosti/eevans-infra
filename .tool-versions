@@ -7,5 +7,5 @@ cosign 2.2.0
 kubectl 1.28.4
 python 3.12.1
 cilium-cli 0.15.11
-golang 1.21.5
+golang 1.21.6
 opentofu 1.6.0
