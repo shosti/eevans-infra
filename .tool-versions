@@ -8,3 +8,4 @@ kubectl 1.28.4
 python 3.12.1
 cilium-cli 0.15.11
 golang 1.21.5
+opentofu 1.6.0
