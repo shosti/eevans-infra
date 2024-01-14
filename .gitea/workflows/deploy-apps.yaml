@@ -6,7 +6,7 @@ jobs:
     steps:
       - uses: http://gitea-http:3000/actions/setup-go@v4
         with:
-          go-version: 1.21.3
+          go-version: 1.21.6
       - uses: http://gitea-http:3000/actions/checkout@v4
       - name: Test
         run: go test -race -v ./...
@@ -19,11 +19,11 @@ jobs:
     steps:
       - uses: http://gitea-http:3000/actions/setup-go@v4
         with:
-          go-version: 1.21.3
+          go-version: 1.21.6
       - uses: http://gitea-http:3000/actions/setup-ko@v0.6
         with:
           version: v0.15.0
-          go-version: 1.21.3
+          go-version: 1.21.6
       - uses: http://gitea-http:3000/actions/flux2/action@main
         with:
           version: 2.1.2
