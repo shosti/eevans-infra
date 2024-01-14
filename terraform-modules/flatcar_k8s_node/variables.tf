@@ -44,7 +44,7 @@ variable "os_version" {
 
 variable "k8s_version" {
   type    = string
-  default = "v1.28.2"
+  default = "v1.29.0"
 }
 
 variable "matchbox_http_endpoint" {
