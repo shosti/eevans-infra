@@ -77,34 +77,52 @@ spec:
           mountPath: /pgcert
           readOnly: true
     ingress:
-      admin:
-        enabled: true
-        className: cilium
-        annotations:
-          cert-manager.io/cluster-issuer: letsencrypt-prod
-        hosts:
-          - host: kratos-admin.eevans.me
-            paths:
-              - path: /
-                pathType: Prefix
-        tls:
-          - secretName: kratos-admin-tls
-            hosts:
-              - kratos-admin.eevans.me
       public:
         enabled: true
         className: cilium
         annotations:
           cert-manager.io/cluster-issuer: letsencrypt-prod
         hosts:
-          - host: kratos.eevans.me
+          - host: kratos-api.eevans.me
             paths:
               - path: /
                 pathType: Prefix
         tls:
-          - secretName: kratos-tls
+          - secretName: kratos-api-tls
             hosts:
-              - kratos.eevans.me
+              - kratos-api.eevans.me
   valuesFrom:
     - kind: Secret
       name: kratos-values
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: kratos-ui
+  namespace: auth
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: kratos-selfservice-ui-node
+      version: 0.38.1
+      sourceRef:
+        kind: HelmRepository
+        name: ory
+        namespace: flux-system
+      interval: 1m
+  values:
+    ingress:
+      enabled: true
+      className: cilium
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+      hosts:
+        - host: kratos.eevans.me
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - secretName: kratos-ui-tls
+          hosts:
+            - kratos.eevans.me
