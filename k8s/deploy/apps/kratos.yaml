@@ -114,7 +114,8 @@ spec:
   values:
     kratosPublicUrl: https://kratos-api.eevans.me
     kratosBrowserUrl: https://kratos.eevans.me
-    csrfCookieName: kratos.eevans.me
+    config:
+      csrfCookieName: kratos.eevans.me
     projectName: "EEvans LAN"
     ingress:
       enabled: true
