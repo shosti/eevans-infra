@@ -16,6 +16,8 @@ spec:
         namespace: flux-system
       interval: 1m
   values:
+    global:
+      dnsDomain: eevans.me
     kratos:
       config:
         dsn: cockroach://kratos@crdb-public.crdb.svc.cluster.local:26257/kratos?sslmode=verify-full&sslrootcert=/pgcert/ca.crt&sslcert=/pgcert/tls.crt&sslkey=/pgcert/tls.key
