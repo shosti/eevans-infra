@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: create-keycloak-test-db
+  name: create-kratos-db
   namespace: crdb
 spec:
   template:
@@ -20,7 +20,7 @@ spec:
             - sql
             - --certs-dir=/cockroach/cockroach-certs
             - --host=crdb-public
-            - --execute=CREATE DATABASE keycloaktest; CREATE USER keycloaktest; ALTER DATABASE keycloaktest OWNER TO keycloaktest;
+            - --execute=CREATE DATABASE kratos; CREATE USER kratos; ALTER DATABASE kratos OWNER TO kratos; REVOKE CONNECT ON DATABASE kratos FROM PUBLIC;
       volumes:
         - name: client-certs
           projected:
@@ -41,23 +41,23 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: crdb-keycloaktest
+  name: crdb-kratos
   namespace: crdb
 spec:
   secretTemplate:
     annotations:
       reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
-      reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "keycloak-test"
+      reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "auth"
       reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
-      reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: "keycloak-test"
-  commonName: keycloaktest
+      reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: "auth"
+  commonName: kratos
   dnsNames:
-    - keycloaktest
+    - kratos
   issuerRef:
     group: cert-manager.io
     kind: Issuer
     name: crdb-issuer
-  secretName: crdb-keycloaktest-cert
+  secretName: crdb-kratos-cert
   usages:
     - digital signature
     - key encipherment
