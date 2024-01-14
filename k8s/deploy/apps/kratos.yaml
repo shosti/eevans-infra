@@ -1,108 +1,108 @@
 ---
-apiVersion: helm.toolkit.fluxcd.io/v2beta2
-kind: HelmRelease
-metadata:
-  name: kratos
-  namespace: auth
-spec:
-  interval: 5m
-  chart:
-    spec:
-      chart: kratos
-      version: 0.38.1
-      sourceRef:
-        kind: HelmRepository
-        name: ory
-        namespace: flux-system
-      interval: 1m
-  values:
-    kratos:
-      config:
-        dsn: postgres://kratos@crdb-public.crdb.svc.cluster.local:26257/kratos?sslmode=verify-full&sslrootcert=/pgcert/ca.crt&sslcert=/pgcert/tls.crt&sslkey=/pgcert/tls.key
-        selfservice:
-          default_browser_return_url: https://kratos.eevans.me
-        identity:
-          schemas:
-            - id: default
-              url: file:///etc/config/identity.default.schema.json
-      automigration:
-        enabled: true
-      identitySchemas:
-        "identity.default.schema.json": |
-          {
-            "$id": "https://schemas.ory.sh/presets/kratos/identity.email.schema.json",
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "title": "Person",
-            "type": "object",
-            "properties": {
-              "traits": {
-                "type": "object",
-                "properties": {
-                  "email": {
-                    "type": "string",
-                    "format": "email",
-                    "title": "E-Mail",
-                    "ory.sh/kratos": {
-                      "credentials": {
-                        "password": {
-                          "identifier": true
-                        }
-                      },
-                      "recovery": {
-                        "via": "email"
-                      },
-                      "verification": {
-                        "via": "email"
-                      }
-                    }
-                  }
-                },
-                "required": [
-                  "email"
-                ],
-                "additionalProperties": false
-              }
-            }
-          }
-    deployment:
-      extraVolumes:
-        - name: pgcert
-          secret:
-            secretName: crdb-kratos-cert
-            defaultMode: 0600
-      extraVolumeMounts:
-        - name: pgcert
-          mountPath: /pgcert
-          readOnly: true
-    ingress:
-      admin:
-        enabled: true
-        className: cilium
-        annotations:
-          cert-manager.io/cluster-issuer: letsencrypt-prod
-        hosts:
-          - host: kratos-admin.eevans.me
-            paths:
-              - path: /
-                pathType: Prefix
-        tls:
-          - secretName: kratos-admin-tls
-            hosts:
-              - kratos-admin.eevans.me
-      public:
-        enabled: true
-        className: cilium
-        annotations:
-          cert-manager.io/cluster-issuer: letsencrypt-prod
-        hosts:
-          - host: kratos.eevans.me
-            paths:
-              - path: /
-                pathType: Prefix
-        tls:
-          - secretName: kratos-tls
-            hosts:
-              - kratos.eevans.me
-  valuesFrom:
-    - kind: Secret
-      name: kratos-values
+# apiVersion: helm.toolkit.fluxcd.io/v2beta2
+# kind: HelmRelease
+# metadata:
+#   name: kratos
+#   namespace: auth
+# spec:
+#   interval: 5m
+#   chart:
+#     spec:
+#       chart: kratos
+#       version: 0.38.1
+#       sourceRef:
+#         kind: HelmRepository
+#         name: ory
+#         namespace: flux-system
+#       interval: 1m
+#   values:
+#     kratos:
+#       config:
+#         dsn: postgres://kratos@crdb-public.crdb.svc.cluster.local:26257/kratos?sslmode=verify-full&sslrootcert=/pgcert/ca.crt&sslcert=/pgcert/tls.crt&sslkey=/pgcert/tls.key
+#         selfservice:
+#           default_browser_return_url: https://kratos.eevans.me
+#         identity:
+#           schemas:
+#             - id: default
+#               url: file:///etc/config/identity.default.schema.json
+#       automigration:
+#         enabled: true
+#       identitySchemas:
+#         "identity.default.schema.json": |
+#           {
+#             "$id": "https://schemas.ory.sh/presets/kratos/identity.email.schema.json",
+#             "$schema": "http://json-schema.org/draft-07/schema#",
+#             "title": "Person",
+#             "type": "object",
+#             "properties": {
+#               "traits": {
+#                 "type": "object",
+#                 "properties": {
+#                   "email": {
+#                     "type": "string",
+#                     "format": "email",
+#                     "title": "E-Mail",
+#                     "ory.sh/kratos": {
+#                       "credentials": {
+#                         "password": {
+#                           "identifier": true
+#                         }
+#                       },
+#                       "recovery": {
+#                         "via": "email"
+#                       },
+#                       "verification": {
+#                         "via": "email"
+#                       }
+#                     }
+#                   }
+#                 },
+#                 "required": [
+#                   "email"
+#                 ],
+#                 "additionalProperties": false
+#               }
+#             }
+#           }
+#     deployment:
+#       extraVolumes:
+#         - name: pgcert
+#           secret:
+#             secretName: crdb-kratos-cert
+#             defaultMode: 0600
+#       extraVolumeMounts:
+#         - name: pgcert
+#           mountPath: /pgcert
+#           readOnly: true
+#     ingress:
+#       admin:
+#         enabled: true
+#         className: cilium
+#         annotations:
+#           cert-manager.io/cluster-issuer: letsencrypt-prod
+#         hosts:
+#           - host: kratos-admin.eevans.me
+#             paths:
+#               - path: /
+#                 pathType: Prefix
+#         tls:
+#           - secretName: kratos-admin-tls
+#             hosts:
+#               - kratos-admin.eevans.me
+#       public:
+#         enabled: true
+#         className: cilium
+#         annotations:
+#           cert-manager.io/cluster-issuer: letsencrypt-prod
+#         hosts:
+#           - host: kratos.eevans.me
+#             paths:
+#               - path: /
+#                 pathType: Prefix
+#         tls:
+#           - secretName: kratos-tls
+#             hosts:
+#               - kratos.eevans.me
+#   valuesFrom:
+#     - kind: Secret
+#       name: kratos-values
