@@ -113,6 +113,7 @@ spec:
       interval: 1m
   values:
     kratosPublicUrl: https://kratos-api.eevans.me
+    kratosAdminUrl: http://kratos-admin
     config:
       csrfCookieName: kratos.eevans.me
     projectName: "EEvans LAN"
