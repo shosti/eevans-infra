@@ -112,6 +112,9 @@ spec:
         namespace: flux-system
       interval: 1m
   values:
+    kratosPublicUrl: https://kratos-api.eevans.me
+    kratosBrowserUrl: https://kratos.eevans.me
+    projectName: "EEvans LAN"
     ingress:
       enabled: true
       className: cilium
