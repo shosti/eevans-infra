@@ -20,6 +20,7 @@ resources:
 - jellyfin.yaml
 - kepler.yaml
 - keycloak.yaml
+- kratos.yaml
 - listmonk.yaml
 - mariadb.yaml
 - mosquitto.yaml
