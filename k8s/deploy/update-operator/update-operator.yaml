@@ -4,7 +4,7 @@ metadata:
   name: flatcar-linux-update-operator
   namespace: reboot-coordinator
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app: flatcar-linux-update-operator
