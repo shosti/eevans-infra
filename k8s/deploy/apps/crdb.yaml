@@ -1,50 +1,50 @@
 # Generates a single multi-tenant CockroachDB cluster
----
-apiVersion: crdb.cockroachlabs.com/v1alpha1
-kind: CrdbCluster
-metadata:
-  name: crdb
-  namespace: crdb
-spec:
-  dataStore:
-    pvc:
-      spec:
-        storageClassName: local-drive
-        accessModes:
-          - ReadWriteOnce
-        resources:
-          requests:
-            storage: 50Gi
-        volumeMode: Filesystem
-  resources:
-    limits:
-      cpu: 1
-      memory: 1Gi
-  tlsEnabled: true
-  cockroachDBVersion: v23.1.11
-  nodes: 3
-  ingress:
-    sql:
-      host: sql.crdb.eevans.me
-    ui:
-      host: crdb.eevans.me
-      tls:
-        - hosts:
-            - crdb.eevans.me
-          secretName: crdb-tls
-      annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-prod
-        nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-  affinity:
-    podAntiAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-            - key: app.kubernetes.io/instance
-              operator: In
-              values:
-              - crdb
-          topologyKey: kubernetes.io/hostname
+# ---
+# apiVersion: crdb.cockroachlabs.com/v1alpha1
+# kind: CrdbCluster
+# metadata:
+#   name: crdb
+#   namespace: crdb
+# spec:
+#   dataStore:
+#     pvc:
+#       spec:
+#         storageClassName: local-drive
+#         accessModes:
+#           - ReadWriteOnce
+#         resources:
+#           requests:
+#             storage: 50Gi
+#         volumeMode: Filesystem
+#   resources:
+#     limits:
+#       cpu: 1
+#       memory: 1Gi
+#   tlsEnabled: true
+#   cockroachDBVersion: v23.1.11
+#   nodes: 3
+#   ingress:
+#     sql:
+#       host: sql.crdb.eevans.me
+#     ui:
+#       host: crdb.eevans.me
+#       tls:
+#         - hosts:
+#             - crdb.eevans.me
+#           secretName: crdb-tls
+#       annotations:
+#         cert-manager.io/cluster-issuer: letsencrypt-prod
+#         nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+#   affinity:
+#     podAntiAffinity:
+#       requiredDuringSchedulingIgnoredDuringExecution:
+#         - labelSelector:
+#             matchExpressions:
+#             - key: app.kubernetes.io/instance
+#               operator: In
+#               values:
+#               - crdb
+#           topologyKey: kubernetes.io/hostname
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
