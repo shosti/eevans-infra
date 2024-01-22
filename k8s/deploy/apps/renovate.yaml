@@ -19,7 +19,7 @@ spec:
         spec:
           serviceAccountName: renovate
           containers:
-            - image: renovate/renovate:37.126
+            - image: renovate/renovate:37.146
               name: renovate-bot
               env:
                 - name: RENOVATE_PLATFORM
