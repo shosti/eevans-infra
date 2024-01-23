@@ -7,4 +7,4 @@ matchbox_letsencrypt_email: dns@example.com
 matchbox_server_tls_key: ""
 
 matchbox_flatcar_channel: stable
-matchbox_flatcar_version: 3602.2.0
+matchbox_flatcar_version: 3760.2.0

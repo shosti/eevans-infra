@@ -39,7 +39,7 @@ variable "channel" {
 
 variable "os_version" {
   type    = string
-  default = "3602.2.0"
+  default = "3760.2.0"
 }
 
 variable "k8s_version" {
