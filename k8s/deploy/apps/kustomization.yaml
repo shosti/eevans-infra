@@ -6,7 +6,6 @@ resources:
 - clickhouse.yaml
 - clickhouse-keeper.yaml
 - clickhouse-operator.yaml
-- commento.yaml
 - crdb.yaml
 - crdb-config.yaml
 - dnsupdate.yaml
