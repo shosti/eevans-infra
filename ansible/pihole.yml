@@ -3,7 +3,7 @@
 - hosts: pihole
   become: yes
   vars_files:
-    - secrets.yml
+    - group_vars/secrets.yml
 
   roles:
     - pihole

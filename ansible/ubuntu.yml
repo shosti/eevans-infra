@@ -3,7 +3,7 @@
 - hosts: ubuntu
   become: yes
   vars_files:
-    - secrets.yml
+    - group_vars/secrets.yml
 
   roles:
     - rsyslog_promtail

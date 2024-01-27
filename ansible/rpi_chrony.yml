@@ -3,7 +3,7 @@
 - hosts: chrony
   become: yes
   vars_files:
-    - secrets.yml
+    - group_vars/secrets.yml
 
   roles:
     - chrony_server
