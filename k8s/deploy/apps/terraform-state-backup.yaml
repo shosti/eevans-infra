@@ -11,7 +11,7 @@ spec:
         spec:
           containers:
           - name: rclone
-            image: rclone/rclone:1.65.1
+            image: rclone/rclone:1.65.2
             envFrom:
               - secretRef:
                   name: terraform-state-backup
