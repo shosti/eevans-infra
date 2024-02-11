@@ -45,7 +45,7 @@ spec:
         spec:
           containers:
             - name: clickhouse
-              image: clickhouse/clickhouse-server:23.12.2.59-alpine
+              image: clickhouse/clickhouse-server:23.12.4.15-alpine
               resources:
                 requests:
                   cpu: 750m
