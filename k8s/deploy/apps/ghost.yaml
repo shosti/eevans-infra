@@ -386,23 +386,23 @@ spec:
     staticConfig:
       static:
       - https://blog.allegramolto.com
----
-apiVersion: monitoring.coreos.com/v1
-kind: PrometheusRule
-metadata:
-  name: ghost
-  namespace: ghost
-spec:
-  groups:
-  - name: ghost.ghost
-    rules:
-    - alert: GhostBlogDown
-      annotations:
-        summary: Ghost blog is unavailable
-      expr: probe_success{job="probe/ghost/ghost",namespace="ghost"} != 1
-      for: 1m
-      labels:
-        severity: critical
+# ---
+# apiVersion: monitoring.coreos.com/v1
+# kind: PrometheusRule
+# metadata:
+#   name: ghost
+#   namespace: ghost
+# spec:
+#   groups:
+#   - name: ghost.ghost
+#     rules:
+#     - alert: GhostBlogDown
+#       annotations:
+#         summary: Ghost blog is unavailable
+#       expr: probe_success{job="probe/ghost/ghost",namespace="ghost"} != 1
+#       for: 1m
+#       labels:
+#         severity: critical
 ---
 apiVersion: objectbucket.io/v1alpha1
 kind: ObjectBucketClaim
