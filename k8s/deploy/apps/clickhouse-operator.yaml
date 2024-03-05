@@ -3757,7 +3757,7 @@ spec:
               name: metrics
 
         - name: metrics-exporter
-          image: altinity/metrics-exporter:0.23.0
+          image: altinity/metrics-exporter:0.24.0
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: etc-clickhouse-operator-folder
