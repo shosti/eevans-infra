@@ -134,7 +134,7 @@ spec:
       containers:
         - name: clickhouse-keeper
           imagePullPolicy: IfNotPresent
-          image: "clickhouse/clickhouse-keeper:23.12.4.15-alpine"
+          image: "clickhouse/clickhouse-keeper:23.12.2.59-alpine"
           resources:
             limits:
               memory: "256Mi"
