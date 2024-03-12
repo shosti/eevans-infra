@@ -105,7 +105,7 @@ spec:
   chart:
     spec:
       chart: kratos-selfservice-ui-node
-      version: 0.39.1
+      version: 0.40.0
       sourceRef:
         kind: HelmRepository
         name: ory
