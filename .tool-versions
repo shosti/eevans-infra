@@ -1,6 +1,6 @@
 awscli 2.15.28
 flux2 2.2.3
-helm 3.13.3
+helm 3.14.3
 kustomize 5.3.0
 cosign 2.2.0
 kubectl 1.29.2
