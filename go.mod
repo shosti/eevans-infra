@@ -3,7 +3,7 @@ module gitea.eevans.me/shosti/eevans-infra
 go 1.21.6
 
 require (
-	github.com/aws/aws-sdk-go v1.49.16
+	github.com/aws/aws-sdk-go v1.50.38
 	github.com/aws/aws-sdk-go-v2/config v1.26.6
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.52.0
 	github.com/jaytaylor/html2text v0.0.0-20230321000545-74c2419ad056
