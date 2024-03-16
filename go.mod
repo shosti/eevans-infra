@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.52.0
 	github.com/jaytaylor/html2text v0.0.0-20230321000545-74c2419ad056
 	github.com/johannesboyne/gofakes3 v0.0.0-20240117152127-f7e9c41d81b2
-	github.com/mmcdole/gofeed v1.2.1
+	github.com/mmcdole/gofeed v1.3.0
 )
 
 require (
